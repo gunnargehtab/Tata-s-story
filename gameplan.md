@@ -1,272 +1,199 @@
-Game Plan — "Tata & The Traveler"
+# Game Plan — "Tata & The Traveler"
 
 A mobile browser RPG inspired by stylized sketchbook art, classic Final Fantasy I mechanics, and a detective‑fantasy narrative.
 
-1. Core Identity
+## 1. Core Identity
 
-Genre: Fantasy Detective RPGPlatform: Mobile Browser (touch‑friendly, lightweight assets)Visual Style: 2.5D in the FFVII mould — pre‑rendered backgrounds, low‑poly characters, 3D battles — shaded like ink sketches: long silhouettes, wide hats, minimal faces, cross‑hatch shading.Narrative Tone: Noir detective energy through a 12‑year‑old protagonist in a fantasy world with modern weapons and social issues.
+- **Genre:** Fantasy Detective RPG
+- **Platform:** Mobile Browser (touch‑friendly, lightweight assets)
+- **Visual Style:** 2.5D in the FFVII mould — pre‑rendered backgrounds, low‑poly characters, 3D battles — shaded like ink sketches: long silhouettes, wide hats, minimal faces, cross‑hatch shading.
+- **Narrative Tone:** Noir detective energy through a 12‑year‑old protagonist in a fantasy world with modern weapons and social issues.
 
-2. Main Characters
+## 2. Main Characters
 
-Tata
+### Tata
 
-12 years old, detective mindset
+- 12 years old, detective mindset
+- Long straight black hair, Borsalino hat
+- Carries modern weapons
+- Combat role: Tactical Ranger / Investigator
+- Unique mechanic: Interrogation
 
-Long straight black hair, Borsalino hat
+### The Traveler
 
-Carries modern weapons
+- Cloaked, mysterious figure
+- Appears at the beginning, triggers main quest
+- Connected to reality‑distorting rifts
 
-Combat role: Tactical Ranger / Investigator
+### NPCs
 
-Unique mechanic: Interrogation
+- Stylized silhouettes inspired by sketches
+- Roles: merchant, archivist, guard, smuggler, teacher, etc.
 
-The Traveler
+## 3. Story Structure
 
-Cloaked, mysterious figure
+### Act I — The Whisper Under the Floorboards
 
-Appears at the beginning, triggers main quest
+- Tata discovers coded tapping beneath her room
+- Finds capsule: "He's here. The traveler. Don't let him leave."
+- Traveler appears → blue shockwave → village destabilizes
+- First dungeon: The Old Well
+- First interrogation: The Lantern Keeper
 
-Connected to reality‑distorting rifts
+### Act II — The Rifts
 
-NPCs
+- Rifts distort creatures and environments
+- Social issues emerge: corruption, missing children, exploitation
+- Tata gains allies: Archivist, Runic Engineer, Dog
 
-Stylized silhouettes inspired by sketches
+### Act III — The Traveler's Truth
 
-Roles: merchant, archivist, guard, smuggler, teacher, etc.
+- Traveler is a messenger warning of collapse
+- Capsule sent by Tata's future self
+- Final dungeon: The Collapsing City
+- Final interrogation: Traveler
+- Endings: Seal rifts / Let world evolve / Become next Traveler
 
-3. Story Structure
+## 4. Game Mechanics
 
-Act I — The Whisper Under the Floorboards
+### Exploration
 
-Tata discovers coded tapping beneath her room
+- Tile‑based movement
+- Tap to move/interact
+- Overworld + small dungeons
+- Detective mode for hidden clues
 
-Finds capsule: "He’s here. The traveler. Don’t let him leave."
+### Combat (FF1‑style)
 
-Traveler appears → blue shockwave → village destabilizes
+- Turn‑based menu: Attack, Skill, Item, Interrogate, Run
+- Interrogate: extract clues, lower morale, reveal weaknesses
 
-First dungeon: The Old Well
+### Weapons
 
-First interrogation: The Lantern Keeper
+- Compact SMG
+- Folding baton
+- Flashbangs
+- Surveillance drone (summon ability)
 
-Act II — The Rifts
+### Stats
 
-Rifts distort creatures and environments
+- INT (Interrogation)
+- DEX (Accuracy)
+- PER (Perception)
+- RES (Rift resistance)
 
-Social issues emerge: corruption, missing children, exploitation
+## 5. World Design
 
-Tata gains allies: Archivist, Runic Engineer, Dog
+### Regions
 
-Act III — The Traveler’s Truth
+- Tata's Village — rustic fantasy + modern tech hints
+- Rift Forest — distorted creatures, blue shockwaves
+- Market City — skyline inspired by sketches
+- Collapsing City — glitchy tiles, final dungeon
+- Archives — lore hub, puzzle area
 
-Traveler is a messenger warning of collapse
+### Environmental Art
 
-Capsule sent by Tata’s future self
+- Heavy black lines
+- Minimal shading
+- Blocky shapes
+- Hats, dogs, odd silhouettes
 
-Final dungeon: The Collapsing City
+## 6. Visual Direction — 2.5D (see [docs/visual-rework.md](docs/visual-rework.md))
 
-Final interrogation: Traveler
+Reworked toward Final Fantasy VII (1997): pre-rendered backgrounds, low-poly characters, real-time 3D battles. Built as a small WebGL2 renderer in-repo, so the project keeps its no-dependency, no-build-step shape. The pixel renderer remains as the fallback.
 
-Endings: Seal rifts / Let world evolve / Become next Traveler
+### Character Proportions
 
-4. Game Mechanics
+- 300–800 triangles, rigid part hierarchies (PS1 field models)
+- Large hats, long hair
+- Minimal facial detail — two ink ticks, no mouth
+- Rectangular torsos, strong silhouettes
 
-Exploration
+### Animation
 
-Tile‑based movement
+- Idle: hat tilt
+- Walk: leg/arm swing
+- Attack: lunge
+- Interrogate: notebook flick
+- (also: cast, hurt, down — closed-form clips per rig)
 
-Tap to move/interact
+### Shading
 
-Overworld + small dungeons
+- Flat toon bands, screen‑space cross‑hatch, ink outlines, PS1 vertex snapping
+- Fog to paper above ground, to near‑black underground
 
-Detective mode for hidden clues
+### UI
 
-Combat (FF1‑style)
+- Ink‑style borders, drawn in 2D over the 3D frame
+- Notebook as menu
+- Blue rift glow for special events
 
-Turn‑based menu: Attack, Skill, Item, Interrogate, Run
+## 7. Systems & Features
 
-Interrogate: extract clues, lower morale, reveal weaknesses
+### Detective Notebook
 
-Weapons
+- Auto‑record clues
+- NPC profiles
+- Rift anomalies
+- Weapon notes
+- Lore fragments
 
-Compact SMG
+### Dialogue System
 
-Folding baton
+- Branching interrogations
+- Tone choices: Calm, Direct, Aggressive, Silent
 
-Flashbangs
+### Rift Events
 
-Surveillance drone (summon ability)
+- Random distortions
+- Time‑limited puzzles
+- Monsters spawn from everyday objects
 
-Stats
+## 8. Development Roadmap
 
-INT (Interrogation)
+### Phase 1 — Prototype (4–6 weeks) — ✅ built, see [docs/phase-1-prototype.md](docs/phase-1-prototype.md)
 
-DEX (Accuracy)
+- Movement
+- Basic combat
+- First village
+- Tata & Traveler sprites
+- One dungeon
 
-PER (Perception)
+### Phase 2 — Core Systems (6–10 weeks) — ✅ built, see [docs/phase-2-systems.md](docs/phase-2-systems.md)
 
-RES (Rift resistance)
+- Interrogation
+- Notebook
+- Inventory
+- Rift events
+- Dialogue branching
 
-5. World Design
+### Phase 3 — Content (10–14 weeks) — ✅ built, see [docs/phase-3-content.md](docs/phase-3-content.md)
 
-Regions
+- Regions
+- NPCs
+- Weapons
+- Main story
+- Side quests
 
-Tata’s Village — rustic fantasy + modern tech hints
+### Visual rework (issue #4) — ✅ built, see [docs/visual-rework.md](docs/visual-rework.md)
 
-Rift Forest — distorted creatures, blue shockwaves
+- 2.5D fields with baked backgrounds + depth
+- Low‑poly cast and animation clips
+- Full 3D battle scenes
+- Ink/toon shader stack
 
-Market City — skyline inspired by sketches
+### Phase 4 — Polish (4–6 weeks)
 
-Collapsing City — glitchy tiles, final dungeon
+- Animations
+- Sound
+- UI
+- Balancing
+- Browser optimization
 
-Archives — lore hub, puzzle area
+## 9. Next Steps
 
-Environmental Art
-
-Heavy black lines
-
-Minimal shading
-
-Blocky shapes
-
-Hats, dogs, odd silhouettes
-
-6. Visual Direction — 2.5D (see docs/visual-rework.md)
-
-Reworked toward Final Fantasy VII (1997): pre-rendered backgrounds, low-poly
-characters, real-time 3D battles. Built as a small WebGL2 renderer in-repo, so
-the project keeps its no-dependency, no-build-step shape. The pixel renderer
-remains as the fallback.
-
-Character Proportions
-
-300–800 triangles, rigid part hierarchies (PS1 field models)
-
-Large hats, long hair
-
-Minimal facial detail — two ink ticks, no mouth
-
-Rectangular torsos, strong silhouettes
-
-Animation
-
-Idle: hat tilt
-
-Walk: leg/arm swing
-
-Attack: lunge
-
-Interrogate: notebook flick
-
-(also: cast, hurt, down — closed-form clips per rig)
-
-Shading
-
-Flat toon bands, screen‑space cross‑hatch, ink outlines, PS1 vertex snapping
-
-Fog to paper above ground, to near‑black underground
-
-UI
-
-Ink‑style borders, drawn in 2D over the 3D frame
-
-Notebook as menu
-
-Blue rift glow for special events
-
-7. Systems & Features
-
-Detective Notebook
-
-Auto‑record clues
-
-NPC profiles
-
-Rift anomalies
-
-Weapon notes
-
-Lore fragments
-
-Dialogue System
-
-Branching interrogations
-
-Tone choices: Calm, Direct, Aggressive, Silent
-
-Rift Events
-
-Random distortions
-
-Time‑limited puzzles
-
-Monsters spawn from everyday objects
-
-8. Development Roadmap
-
-Phase 1 — Prototype (4–6 weeks) — ✅ built, see docs/phase-1-prototype.md
-
-Movement
-
-Basic combat
-
-First village
-
-Tata & Traveler sprites
-
-One dungeon
-
-Phase 2 — Core Systems (6–10 weeks) — ✅ built, see docs/phase-2-systems.md
-
-Interrogation
-
-Notebook
-
-Inventory
-
-Rift events
-
-Dialogue branching
-
-Phase 3 — Content (10–14 weeks) — ✅ built, see docs/phase-3-content.md
-
-Regions
-
-NPCs
-
-Weapons
-
-Main story
-
-Side quests
-
-Visual rework (issue #4) — ✅ built, see docs/visual-rework.md
-
-2.5D fields with baked backgrounds + depth
-
-Low‑poly cast and animation clips
-
-Full 3D battle scenes
-
-Ink/toon shader stack
-
-Phase 4 — Polish (4–6 weeks)
-
-Animations
-
-Sound
-
-UI
-
-Balancing
-
-Browser optimization
-
-9. Next Steps
-
-Expand combat system
-
-Build world factions
-
-Create Tata’s character sheet
-
-Outline story chapters
+- Expand combat system
+- Build world factions
+- Create Tata's character sheet
+- Outline story chapters
