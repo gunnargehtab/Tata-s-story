@@ -4,13 +4,14 @@ import { VIEW, inkPanel, text } from './engine/ui.js';
 import { initInput, Input, endFrame } from './engine/input.js';
 import { G, enterMap, loadSave, hasSave, clearSave, newTata } from './game/state.js';
 import { updateWorld, drawWorld, World } from './game/world.js';
-import { updateBattle, drawBattle } from './game/battle.js';
+import { updateBattle, drawBattle, startBattle } from './game/battle.js';
 import { updateInterrogation, drawInterrogation, Interro } from './game/interrogation.js';
 import { Notebook } from './game/notebook.js';
 import { Talk } from './game/talk.js';
 import { Cut } from './game/cutscene.js';
 import { showDialogue, Dialog } from './game/dialogue.js';
 import { PAL } from './art/palette.js';
+import { initGfx, gfxEnabled, setGfxEnabled } from './gfx/index.js';
 
 const canvas = document.getElementById('screen');
 const ctx = canvas.getContext('2d', { alpha: false });
@@ -18,6 +19,7 @@ ctx.imageSmoothingEnabled = false;
 
 buildSprites();
 buildTiles();
+initGfx(VIEW.width, VIEW.height);   // 2.5D renderer; falls back to sprites on its own
 initInput(canvas, VIEW);
 
 // --- presentation: fit the 360x640 field to the device, integer scale first
@@ -65,7 +67,8 @@ function drawTitle() {
     text(ctx, b.label, b.x + b.w / 2, b.y + 18, { size: 16, align: 'center', bold: true });
     ctx.globalAlpha = 1;
   }
-  text(ctx, 'Phase 1 prototype — movement, combat, one village, one dungeon', VIEW.width / 2, 552, { size: 9, align: 'center', color: PAL.g });
+  text(ctx, gfxEnabled() ? 'pre-rendered fields · low-poly cast · 3D battles' : 'pixel renderer (WebGL2 unavailable)',
+    VIEW.width / 2, 552, { size: 9, align: 'center', color: PAL.g });
   text(ctx, 'tap to move · A to look · NOTE for the notebook', VIEW.width / 2, 570, { size: 9, align: 'center', color: PAL.g });
 }
 
@@ -122,6 +125,8 @@ function frame(now) {
 
 // handy while prototyping: inspect live state from the console
 window.TATA = G;
-window.TATA_DEBUG = { Dialog, Cut, World, Notebook, Talk, Interro };
+window.TATA_DEBUG = { Dialog, Cut, World, Notebook, Talk, Interro, warp: enterMap, fight: startBattle };
+// TATA_GFX.set(false) drops back to the Phase 1/2 pixel renderer at any time
+window.TATA_GFX = { enabled: gfxEnabled, set: setGfxEnabled };
 
 requestAnimationFrame(frame);

@@ -4,7 +4,7 @@ A mobile browser RPG inspired by stylized sketchbook art, classic Final Fantasy 
 
 1. Core Identity
 
-Genre: Fantasy Detective RPGPlatform: Mobile Browser (touch‑friendly, lightweight assets)Visual Style: Pixel art inspired by ink sketches — long silhouettes, wide hats, minimal faces, expressive shading.Narrative Tone: Noir detective energy through a 12‑year‑old protagonist in a fantasy world with modern weapons and social issues.
+Genre: Fantasy Detective RPGPlatform: Mobile Browser (touch‑friendly, lightweight assets)Visual Style: 2.5D in the FFVII mould — pre‑rendered backgrounds, low‑poly characters, 3D battles — shaded like ink sketches: long silhouettes, wide hats, minimal faces, cross‑hatch shading.Narrative Tone: Noir detective energy through a 12‑year‑old protagonist in a fantasy world with modern weapons and social issues.
 
 2. Main Characters
 
@@ -130,31 +130,44 @@ Blocky shapes
 
 Hats, dogs, odd silhouettes
 
-6. Pixel Art Direction
+6. Visual Direction — 2.5D (see docs/visual-rework.md)
+
+Reworked toward Final Fantasy VII (1997): pre-rendered backgrounds, low-poly
+characters, real-time 3D battles. Built as a small WebGL2 renderer in-repo, so
+the project keeps its no-dependency, no-build-step shape. The pixel renderer
+remains as the fallback.
 
 Character Proportions
 
-24–32px tall
+300–800 triangles, rigid part hierarchies (PS1 field models)
 
 Large hats, long hair
 
-Minimal facial detail
+Minimal facial detail — two ink ticks, no mouth
 
-Rectangular torsos
+Rectangular torsos, strong silhouettes
 
 Animation
 
 Idle: hat tilt
 
-Walk: 2‑frame shuffle
+Walk: leg/arm swing
 
-Attack: 1‑frame flash
+Attack: lunge
 
 Interrogate: notebook flick
 
+(also: cast, hurt, down — closed-form clips per rig)
+
+Shading
+
+Flat toon bands, screen‑space cross‑hatch, ink outlines, PS1 vertex snapping
+
+Fog to paper above ground, to near‑black underground
+
 UI
 
-Ink‑style borders
+Ink‑style borders, drawn in 2D over the 3D frame
 
 Notebook as menu
 
@@ -225,6 +238,16 @@ Weapons
 Main story
 
 Side quests
+
+Visual rework (issue #4) — ✅ built, see docs/visual-rework.md
+
+2.5D fields with baked backgrounds + depth
+
+Low‑poly cast and animation clips
+
+Full 3D battle scenes
+
+Ink/toon shader stack
 
 Phase 4 — Polish (4–6 weeks)
 

@@ -12,12 +12,13 @@ import { Notebook, openNotebook, updateNotebook, drawNotebook } from './notebook
 import { startTalk, talkActive } from './talk.js';
 import { startInterrogation } from './interrogation.js';
 import { maybeOpenRift, updateRift, riftStep, drawRift, drawRiftHud } from './rift.js';
+import { gfxEnabled, drawWorld3D, fieldProject, fieldUnproject } from '../gfx/index.js';
 
 const TS = TILE * WORLD_SCALE;      // 32 screen px per tile
 const STEP_TIME = 0.16;             // seconds per tile
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
-export const World = { camX: 0, camY: 0, encounterCooldown: 0 };
+export const World = { camX: 0, camY: 0, encounterCooldown: 0, threeD: false };
 
 // ------------------------------------------------------------------ helpers
 
@@ -121,8 +122,7 @@ function handleInput() {
   }
 
   for (const tap of Input.taps) {
-    const tx = Math.floor((tap.x + World.camX) / TS);
-    const ty = Math.floor((tap.y + World.camY) / TS);
+    const { tx, ty } = screenToTile(tap.x, tap.y);
     const npc = npcAt(tx, ty);
     const spot = (G.map.interacts || []).find((i) => i.x === tx && i.y === ty);
     if (npc || spot || !isWalkable(tileAt(tx, ty))) {
@@ -281,9 +281,67 @@ function animateNpcs(dt) {
   }
 }
 
+/**
+ * Screen pixels to map tile, through whichever projection is drawing the field.
+ *
+ * In 3D a body is drawn *above* the tile it stands on, so unprojecting straight
+ * onto the ground plane would send a tap on someone's hat to the tile behind
+ * them. Standing things are hit-tested first, ground last.
+ */
+function screenToTile(sx, sy) {
+  if (!(gfxEnabled() && World.threeD)) {
+    return { tx: Math.floor((sx + World.camX) / TS), ty: Math.floor((sy + World.camY) / TS) };
+  }
+  const inBody = (tx, ty, halfW, top) => {
+    const feet = fieldProject(tx, ty, 0);
+    return sx >= feet.x - halfW && sx <= feet.x + halfW && sy <= feet.y + 6 && sy >= feet.y - top;
+  };
+  for (const npc of (G.map.npcs || [])) {
+    if (inBody(npc.cx, npc.cy, 15, npc.actor === 'dog' ? 18 : 42)) return { tx: npc.cx, ty: npc.cy };
+  }
+  for (const spot of (G.map.interacts || [])) {
+    if (inBody(spot.x, spot.y, 17, 40)) return { tx: spot.x, ty: spot.y };
+  }
+  const p = fieldUnproject(sx, sy);
+  return { tx: Math.round(p.x), ty: Math.round(p.y) };
+}
+
+/** Tile to screen pixels — the 2D overlays (lantern, rift HUD) draw through this. */
+function tileToScreen(tx, ty, height = 0) {
+  if (gfxEnabled() && World.threeD) return fieldProject(tx, ty, height);
+  return { x: tx * TS - World.camX + TS / 2, y: ty * TS - World.camY + TS / 2 };
+}
+
 // --------------------------------------------------------------------- draw
 
 export function drawWorld(ctx) {
+  World.threeD = gfxEnabled() && drawWorld3D(ctx, {
+    mapId: G.mapId, map: G.map, player: G.player, actors: G.actors, time: G.time, rift: G.rift,
+  });
+  if (World.threeD) {
+    if (G.map.dark) drawLantern(ctx, G.player);
+    drawHud(ctx);
+    drawRiftHud(ctx);
+    drawOverlays(ctx);
+    return;
+  }
+  drawWorld2D(ctx);
+}
+
+/** Flash, dialogue, notebook and controls sit on top of either renderer. */
+function drawOverlays(ctx) {
+  if (Cut.flash > 0) {
+    ctx.globalAlpha = Math.min(0.85, Cut.flash);
+    ctx.fillStyle = PAL.B;
+    ctx.fillRect(0, 0, VIEW.width, VIEW.height);
+    ctx.globalAlpha = 1;
+  }
+  drawDialogue(ctx);
+  if (Notebook.open) drawNotebook(ctx);
+  else if (!Dialog.active) drawControls(ctx, { pad: true, actionLabel: 'LOOK', menu: true, menuLabel: 'NOTE' });
+}
+
+function drawWorld2D(ctx) {
   const m = G.map;
   const p = G.player;
 
@@ -315,18 +373,10 @@ export function drawWorld(ctx) {
   bodies.sort((a, b) => a.y - b.y).forEach((b) => b.draw());
 
   drawRift(ctx, camX, camY);
-  if (m.dark) drawLantern(ctx, p, camX, camY);
+  if (m.dark) drawLantern(ctx, p);
   drawHud(ctx);
   drawRiftHud(ctx);
-  if (Cut.flash > 0) {
-    ctx.globalAlpha = Math.min(0.85, Cut.flash);
-    ctx.fillStyle = PAL.B;
-    ctx.fillRect(0, 0, VIEW.width, VIEW.height);
-    ctx.globalAlpha = 1;
-  }
-  drawDialogue(ctx);
-  if (Notebook.open) drawNotebook(ctx);
-  else if (!Dialog.active) drawControls(ctx, { pad: true, actionLabel: 'LOOK', menu: true, menuLabel: 'NOTE' });
+  drawOverlays(ctx);
 }
 
 function frameFor(set, dir, moving, anim, idleFrame) {
@@ -360,7 +410,7 @@ function drawActor(ctx, a, camX, camY) {
 
 // Flashlight falloff for the well: ink over the page with a hole punched at Tata.
 let shadowCv = null;
-function drawLantern(ctx, p, camX, camY) {
+function drawLantern(ctx, p) {
   if (!shadowCv) {
     shadowCv = document.createElement('canvas');
     shadowCv.width = VIEW.width; shadowCv.height = VIEW.height;
@@ -369,12 +419,12 @@ function drawLantern(ctx, p, camX, camY) {
   sctx.globalCompositeOperation = 'source-over';
   sctx.clearRect(0, 0, VIEW.width, VIEW.height);
   sctx.fillStyle = PAL.K;
-  sctx.globalAlpha = 0.62;
+  sctx.globalAlpha = 0.74;
   sctx.fillRect(0, 0, VIEW.width, VIEW.height);
   sctx.globalAlpha = 1;
-  const cx = p.px * TS - camX + TS / 2;
-  const cy = p.py * TS - camY + TS / 2;
-  const grad = sctx.createRadialGradient(cx, cy, 20, cx, cy, 150);
+  const centre = tileToScreen(p.px, p.py, 0.5);
+  const cx = centre.x, cy = centre.y;
+  const grad = sctx.createRadialGradient(cx, cy, 16, cx, cy, 128);
   grad.addColorStop(0, 'rgba(0,0,0,1)');
   grad.addColorStop(0.6, 'rgba(0,0,0,0.75)');
   grad.addColorStop(1, 'rgba(0,0,0,0)');
