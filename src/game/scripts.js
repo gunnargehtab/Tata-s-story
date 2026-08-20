@@ -1,6 +1,10 @@
-import { G, addClue, addItem, enterMap, noteLore, save } from './state.js';
+import {
+  G, addClue, addItem, enterMap, noteLore, noteAnomaly, save,
+  hasItem, questActive, advanceQuest, startQuest,
+} from './state.js';
 import { runScript } from './cutscene.js';
 import { showDialogue } from './dialogue.js';
+import { openShop } from './shop.js';
 
 /*
  * Act I beats (gameplan §3): the whisper under the floorboards, the capsule,
@@ -130,4 +134,134 @@ export const SCRIPTS = {
       ] },
     ]);
   },
+
+  // ---------------------------------------------------------------- Act II
+
+  /** The road out of the village, taken for the first time. */
+  forestRoad() {
+    runScript([
+      { say: [
+        'The path north stops pretending to be a village path and becomes a road.',
+        { who: 'Tata', text: 'Cargo goes somewhere. Roads are just the somewhere, written down.' },
+      ] },
+      { fn: () => { noteLore('The road north runs shrine, forest, city — the same line the cargo takes.'); } },
+      { save: true },
+    ]);
+  },
+
+  cairn() {
+    const first = !G.flags.cairnRead;
+    runScript([
+      { say: first
+        ? ['Stones stacked shoulder-high, older than the village and better maintained.',
+           'Things are left on it: a shoe, a spoon, a child’s wooden horse with the paint worn off the nose.',
+           { who: 'Tata', text: 'You leave a thing so the forest takes the thing instead of you.' }]
+        : ['The cairn. The wooden horse has been turned to face the road.'] },
+      { fn: () => {
+        G.flags.cairnRead = true;
+        noteAnomaly('Offerings on the forest cairn are turned to face the road overnight.');
+        addClue('cairn-toll', 'The cairn is a toll. Something walks past it and expects payment.');
+        if (questActive('register')) advanceQuest('register', 0);
+      } },
+      { say: [{ who: 'Notebook', text: 'The cairn is a toll, and the stag is the collector.' }] },
+      { save: true },
+    ]);
+  },
+
+  stag() {
+    runScript([
+      { say: [
+        'Three trees away, a shape resolves that was not standing there and has not moved.',
+        { who: 'Tata', text: 'Antlers still growing. That is not how antlers work.' },
+      ] },
+      { battle: {
+        ids: ['stag'], boss: true,
+        intro: 'The Rift Stag steps onto its line, and the line runs through Tata.',
+        onEnd: () => {
+          G.tata.hp = Math.max(1, Math.round(G.tata.maxHp * 0.4));
+          enterMap('forest', 6, 17, 'up');
+          save();
+          showDialogue(['The forest puts her back on the road facing the way she came.',
+            { who: 'Tata', text: 'Fine. It keeps its line. I will bring something louder.' }]);
+        },
+      } },
+      { fn: () => {
+        addClue('stag-toll', 'The stag collects what the cairn is owed and carries it in its antlers.');
+        noteLore('The stag is not a guard. It is a collector, and it works to a schedule.');
+        G.flags.stagDown = true;
+        if (questActive('register') && hasItem('register')) advanceQuest('register', 1);
+      } },
+      { say: [
+        'It walks back into the blue and takes the shape of the trees with it.',
+        { who: 'Tata', text: 'Two names in a register, and a road that goes to a city. Onwards.' },
+      ] },
+      { save: true },
+    ]);
+  },
+
+  marketArrive() {
+    runScript([
+      { say: [
+        'Market City comes up out of the fog in pieces: a crane, a bell tower, then all of it at once.',
+        'The Low Quay smells of salt and rope and something colder underneath.',
+        { who: 'Tata', text: 'Somewhere on this quay there is a man with a book. Books have names in them.' },
+      ] },
+      { fn: () => {
+        noteLore('Market City: cranes, bells, and a quay where the water is colder than the season.');
+        if (!G.quests.thirdBell) startQuest('thirdBell');
+      } },
+      { save: true },
+    ]);
+  },
+
+  shop() { openShop('quay'); },
+
+  /** The walk back into the village, with Act II's answer in her pocket. */
+  actTwoEnd() {
+    runScript([
+      { say: [
+        'The village looks smaller from the road than it does from inside it.',
+        { who: 'Tata', text: 'A door in a well. A quay that signs for children. A year cut out of the paper.' },
+        { who: 'Tata', text: 'And a note in my handwriting telling me not to let him leave.' },
+      ] },
+      { fn: () => {
+        addClue('act-two', 'The crossing is a business, the record was erased on purpose, and the warning came from me.');
+        noteLore('Act II closes with three facts that only fit together if the Traveler has done this before.');
+      } },
+      { say: [
+        'END OF SLICE — Act II, "The Rifts".',
+        'Act III picks up here: the Collapsing City, and the last interrogation.',
+      ] },
+      { flag: 'actTwoComplete' },
+      { save: true },
+    ]);
+  },
+
+  recordA() { readRecord('A', 'A tide table for the sealed year. The tides are ordinary. The margin note is not: "he came up on the slack."'); },
+  recordB() { readRecord('B', 'A ledger of village debts, all settled in one week, all in the same unfamiliar coin.'); },
+  recordC() { readRecord('C', 'A complaint about noise: tapping under the floorboards of a house that no longer exists.'); },
 };
+
+/** The three surviving records of the sealed year, for Vess. */
+function readRecord(which, text) {
+  const key = `record${which}`;
+  if (G.flags[key]) {
+    showDialogue(['She has already read this one. The shelf smells of dust and old salt.']);
+    return;
+  }
+  runScript([
+    { say: [text] },
+    { fn: () => {
+      G.flags[key] = true;
+      noteLore(text);
+      if (G.flags.recordA && G.flags.recordB && G.flags.recordC) {
+        G.flags.recordsAll = true;
+        addClue('records-three', 'Three records survived the sealed year: a tide, a ledger, and a complaint about tapping.');
+      }
+    } },
+    // read after the flag is set, not while the script is being built
+    { fn: () => showDialogue([{ who: 'Tata',
+      text: G.flags.recordsAll ? 'Three. Vess can read across them now.' : 'One down. There will be more.' }]) },
+    { save: true },
+  ]);
+}

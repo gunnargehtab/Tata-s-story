@@ -1,4 +1,4 @@
-import { G, addClue, addItem, noteProfile, noteLore, grantXp, stat, save } from './state.js';
+import { G, addClue, addItem, addCoin, noteProfile, noteLore, grantXp, stat, save } from './state.js';
 import { SUBJECTS } from '../data/interrogations.js';
 import { ITEMS } from '../data/items.js';
 import { TONES } from '../data/skills.js';
@@ -175,6 +175,7 @@ function resolveAfter() {
       if (fx.clue && addClue(fx.clue.id, fx.clue.text)) say(`Notebook: ${fx.clue.text}`);
       if (fx.lore) { noteLore(fx.lore); say(`Fragment kept: ${fx.lore}`); }
       if (fx.item) { addItem(fx.item); say(`Satchel: ${ITEMS[fx.item].name}.`); }
+      if (fx.coin) { addCoin(fx.coin); say(`${fx.coin} coin, counted out without being asked.`); }
       if (fx.flag) G.flags[fx.flag] = true;
       if (fx.profile) noteProfile(fx.profile.id, fx.profile);
       if (fx.xp) { const up = grantXp(fx.xp); say(`+${fx.xp} XP.`); if (up) say(`Tata reaches level ${G.tata.level}.`); }
@@ -255,7 +256,8 @@ export function evidenceList() {
   const out = [];
   for (const id of Object.keys(G.items)) {
     const item = ITEMS[id];
-    if (item && item.kind === 'key') out.push({ id, label: item.name, hint: 'object', body: item.evidence });
+    if (!item || (item.kind !== 'key' && item.kind !== 'loot')) continue;
+    out.push({ id, label: item.name, hint: 'object', body: item.evidence || item.desc });
   }
   for (const clue of G.clues) out.push({ id: clue.id, label: clue.text, hint: 'note', body: clue.text });
   return out;

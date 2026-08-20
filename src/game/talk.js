@@ -1,4 +1,10 @@
-import { G, addClue, addItem, hasClue, hasItem, noteProfile, noteLore, noteAnomaly, save } from './state.js';
+import {
+  G, addClue, addItem, hasClue, hasItem, noteProfile, noteLore, noteAnomaly, save,
+  addCoin, spendCoin, ownWeapon, equipWeapon, startQuest, advanceQuest, finishQuest,
+  questState, questStep,
+} from './state.js';
+import { QUESTS } from '../data/quests.js';
+import { WEAPONS } from '../data/weapons.js';
 import { showDialogue, showChoices } from './dialogue.js';
 import { TALKS } from '../data/talks.js';
 
@@ -50,6 +56,11 @@ export function conditionMet(cond) {
   if (cond.item && !hasItem(cond.item)) return false;
   if (cond.profile && !G.profiles[cond.profile]) return false;
   if (cond.minINT && G.tata.INT < cond.minINT) return false;
+  if (cond.quest && questState(cond.quest) !== (cond.questState || 'active')) return false;
+  if (cond.noQuest && questState(cond.noQuest)) return false;
+  if (cond.questStep !== undefined && questStep(cond.quest) !== cond.questStep) return false;
+  if (cond.coin && G.coin < cond.coin) return false;
+  if (cond.items) for (const [id, n] of Object.entries(cond.items)) if ((G.items[id] || 0) < n) return false;
   return true;
 }
 
@@ -64,7 +75,40 @@ export function applyEffects(fx) {
   if (fx.lore) for (const l of [].concat(fx.lore)) noteLore(l);
   if (fx.anomaly) for (const a of [].concat(fx.anomaly)) noteAnomaly(a);
   if (fx.profile) noteProfile(fx.profile.id, fx.profile);
+  if (fx.coin) { addCoin(fx.coin); gained.push(`${fx.coin > 0 ? '+' : ''}${fx.coin} coin.`); }
+  if (fx.spend) spendCoin(fx.spend);
+  if (fx.takeItem) for (const [id, n] of Object.entries(fx.takeItem)) {
+    G.items[id] = Math.max(0, (G.items[id] || 0) - n);
+    if (!G.items[id]) delete G.items[id];
+  }
+  if (fx.weapon) { ownWeapon(fx.weapon); equipWeapon(fx.weapon); gained.push(`In hand: ${WEAPONS[fx.weapon].name}.`); }
+  if (fx.startQuest) for (const id of [].concat(fx.startQuest)) {
+    if (startQuest(id)) gained.push(`Job taken: ${QUESTS[id].title}.`);
+  }
+  if (fx.advanceQuest) {
+    const { id, step } = typeof fx.advanceQuest === 'string' ? { id: fx.advanceQuest, step: null } : fx.advanceQuest;
+    advanceQuest(id, step);
+  }
+  if (fx.finishQuest) for (const id of [].concat(fx.finishQuest)) {
+    finishQuest(id);
+    gained.push(`Job closed: ${QUESTS[id].title}.`);
+    for (const line of payReward(id)) gained.push(line);
+  }
   return gained;
+}
+
+/** Pays a quest's reward once, when it closes. */
+function payReward(id) {
+  const q = QUESTS[id];
+  const out = [];
+  if (!q || !q.reward) return out;
+  const r = q.reward;
+  if (r.coin) { addCoin(r.coin); out.push(`+${r.coin} coin.`); }
+  if (r.item) { addItem(r.item); out.push(`Satchel: ${r.item}.`); }
+  if (r.weapon) { ownWeapon(r.weapon); out.push(`New weapon: ${WEAPONS[r.weapon].name}.`); }
+  if (r.clue && addClue(r.clue.id, r.clue.text)) out.push(r.clue.text);
+  if (r.lore) noteLore(r.lore);
+  return out;
 }
 
 function goto(id) {

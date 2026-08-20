@@ -221,6 +221,53 @@ export const MODELS = {
     }
   },
 
+  /** Clockwork Rat: market vermin with gearwork where the appetite should be. */
+  rat(b) {
+    b.part(P.TORSO).color('#4a4038');
+    b.box({ x: 0, y: 0.20, z: 0, w: 0.24, h: 0.20, d: 0.52, taperZ: 0.85 });
+    b.color(PAL.G).box({ x: 0, y: 0.31, z: -0.04, w: 0.14, h: 0.06, d: 0.22 });      // exposed works
+    b.color(PAL.Y).box({ x: 0, y: 0.34, z: -0.04, w: 0.07, h: 0.03, d: 0.07 });      // a tooth of brass
+    b.part(P.HEAD).color('#4a4038');
+    b.box({ x: 0, y: 0.02, z: 0.14, w: 0.18, h: 0.16, d: 0.22, taperZ: 0.7 });
+    b.color(PAL.K).box({ x: 0.05, y: 0.06, z: 0.24, w: 0.04, h: 0.04, d: 0.03 });
+    b.color(PAL.K).box({ x: -0.05, y: 0.06, z: 0.24, w: 0.04, h: 0.04, d: 0.03 });
+    b.color(PAL.G).box({ x: 0.09, y: 0.14, z: 0.06, w: 0.03, h: 0.11, d: 0.11 });    // cog ears
+    b.color(PAL.G).box({ x: -0.09, y: 0.14, z: 0.06, w: 0.03, h: 0.11, d: 0.11 });
+    for (const [part, dir] of [[P.LEG_L, 1], [P.LEG_R, -1]]) {
+      b.part(part).color('#3a322c');
+      for (let i = 0; i < 2; i++) {
+        b.box({ x: 0.11 * dir, y: -0.09, z: 0.16 - i * 0.30, w: 0.05, h: 0.20, d: 0.05 });
+      }
+    }
+    b.part(P.EXTRA).color(PAL.G).box({ x: 0, y: 0.20, z: -0.34, w: 0.04, h: 0.04, d: 0.30 });  // wire tail
+  },
+
+  /** The Rift Stag: antlers that have not finished growing, and will not. */
+  stag(b) {
+    b.part(P.TORSO).color('#4b4038');
+    b.box({ x: 0, y: 0.92, z: 0, w: 0.42, h: 0.44, d: 0.92, taperZ: 0.85 });
+    b.color(PAL.b).box({ x: 0, y: 1.14, z: 0, w: 0.14, h: 0.06, d: 0.72 });          // rift seam
+    b.part(P.HEAD).color('#4b4038');
+    b.box({ x: 0, y: 0.10, z: 0.16, w: 0.28, h: 0.30, d: 0.34, taperZ: 0.7 });
+    b.box({ x: 0, y: 0.02, z: 0.36, w: 0.18, h: 0.16, d: 0.20 });                    // muzzle
+    b.color(PAL.B).box({ x: 0.09, y: 0.16, z: 0.30, w: 0.05, h: 0.05, d: 0.04 });
+    b.color(PAL.B).box({ x: -0.09, y: 0.16, z: 0.30, w: 0.05, h: 0.05, d: 0.04 });
+    // antlers: a blue lattice, still branching
+    b.color(PAL.B);
+    for (const dir of [1, -1]) {
+      b.box({ x: 0.13 * dir, y: 0.42, z: 0.02, w: 0.05, h: 0.46, d: 0.05, rz: 0.22 * dir });
+      b.box({ x: 0.26 * dir, y: 0.60, z: 0.04, w: 0.04, h: 0.26, d: 0.04, rz: 0.5 * dir });
+      b.box({ x: 0.22 * dir, y: 0.72, z: -0.14, w: 0.04, h: 0.22, d: 0.04, rz: 0.3 * dir });
+      b.box({ x: 0.34 * dir, y: 0.78, z: 0.10, w: 0.03, h: 0.18, d: 0.03, rz: 0.7 * dir });
+    }
+    for (const [part, dir] of [[P.LEG_L, 1], [P.LEG_R, -1]]) {
+      b.part(part).color('#3b332c');
+      for (let i = 0; i < 2; i++) {
+        b.box({ x: 0.20 * dir, y: -0.34, z: 0.30 - i * 0.60, w: 0.09, h: 0.70, d: 0.09 });
+      }
+    }
+  },
+
   /** The Lantern Keeper: posted at the well, holding a light that asks questions. */
   keeper(b) {
     b.part(P.TORSO).color('#26303a');
@@ -312,6 +359,19 @@ export const RIGS = {
 
   rift: rig([], 'float'),
 
+  rat: rig([
+    [P.HEAD, [0, 0.22, 0.24]],
+    [P.LEG_L, [0, 0.20, 0]],
+    [P.LEG_R, [0, 0.20, 0]],
+    [P.EXTRA, [0, 0.20, -0.20]],
+  ], 'quad'),
+
+  stag: rig([
+    [P.HEAD, [0, 1.10, 0.42]],
+    [P.LEG_L, [0, 0.70, 0]],
+    [P.LEG_R, [0, 0.70, 0]],
+  ], 'quad'),
+
   keeper: rig([
     [P.HEAD, [0, 1.40, 0]],
     [P.HAT, [0, 1.62, 0]],
@@ -325,7 +385,7 @@ export const RIGS = {
  * Per-model world scale. The Traveler reads as "tall figure" in the prose, so he
  * is drawn a head and a half above everyone else.
  */
-export const SCALES = { traveler: 1.28, keeper: 1.1, guard: 1.05 };
+export const SCALES = { traveler: 1.28, keeper: 1.1, guard: 1.05, stag: 1.15 };
 
 export const scaleOf = (id) => SCALES[id] || 1;
 
@@ -334,6 +394,7 @@ export const HEIGHTS = {
   tata: 1.42, traveler: 1.66, villager: 1.40, merchant: 1.42, archivist: 1.40,
   guard: 1.48, teacher: 1.40, smuggler: 1.42, dog: 0.60,
   wisp: 1.05, crate: 0.62, hound: 0.72, keeper: 2.00, rift: 1.20,
+  rat: 0.46, stag: 1.60,
 };
 
 const cache = new Map();
