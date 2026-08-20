@@ -12,7 +12,7 @@ import { Notebook, openNotebook, updateNotebook, drawNotebook } from './notebook
 import { startTalk, talkActive } from './talk.js';
 import { startInterrogation } from './interrogation.js';
 import { maybeOpenRift, updateRift, riftStep, drawRift, drawRiftHud } from './rift.js';
-import { gfxEnabled, drawWorld3D, fieldProject, fieldUnproject } from '../gfx/index.js';
+import { gfxEnabled, drawWorld3D, fieldProject, fieldUnproject, fieldPPU } from '../gfx/index.js';
 
 const TS = TILE * WORLD_SCALE;      // 32 screen px per tile
 const STEP_TIME = 0.16;             // seconds per tile
@@ -292,9 +292,10 @@ function screenToTile(sx, sy) {
   if (!(gfxEnabled() && World.threeD)) {
     return { tx: Math.floor((sx + World.camX) / TS), ty: Math.floor((sy + World.camY) / TS) };
   }
+  const z = fieldPPU() / 32;         // hit boxes track the per-map camera distance
   const inBody = (tx, ty, halfW, top) => {
     const feet = fieldProject(tx, ty, 0);
-    return sx >= feet.x - halfW && sx <= feet.x + halfW && sy <= feet.y + 6 && sy >= feet.y - top;
+    return sx >= feet.x - halfW * z && sx <= feet.x + halfW * z && sy <= feet.y + 6 * z && sy >= feet.y - top * z;
   };
   for (const npc of (G.map.npcs || [])) {
     if (inBody(npc.cx, npc.cy, 15, npc.actor === 'dog' ? 18 : 42)) return { tx: npc.cx, ty: npc.cy };
@@ -424,7 +425,8 @@ function drawLantern(ctx, p) {
   sctx.globalAlpha = 1;
   const centre = tileToScreen(p.px, p.py, 0.5);
   const cx = centre.x, cy = centre.y;
-  const grad = sctx.createRadialGradient(cx, cy, 16, cx, cy, 128);
+  const z = World.threeD ? fieldPPU() / 32 : 1;   // the light pool tracks the camera distance
+  const grad = sctx.createRadialGradient(cx, cy, 16 * z, cx, cy, 128 * z);
   grad.addColorStop(0, 'rgba(0,0,0,1)');
   grad.addColorStop(0.6, 'rgba(0,0,0,0.75)');
   grad.addColorStop(1, 'rgba(0,0,0,0)');

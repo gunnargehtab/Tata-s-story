@@ -61,6 +61,8 @@ export function pose(buf, rigId, state = {}) {
       legSwing = sin(t, 2.4, 0.62);
       armSwing = -legSwing * 0.6;
       bob.dy = Math.abs(sin(t, 2.4, 0.035));
+      bob.rx = 0.06;                       // eager forward lean
+      bob.rz = sin(t, 2.4, 0.03);          // weight shifting over the stance leg
       hatTilt = sin(t, 2.4, 0.05);
       break;
     case 'attack': {

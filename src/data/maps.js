@@ -4,11 +4,15 @@
  *   ^  roof       D  door       w  water      O  the old well
  *   =  planks     -  dungeon floor            >  stairs down   <  stairs up
  *   *  rift-torn ground         r  rubble     f  fence      c  crate   B  shelf
+ *
+ * `space` names the kind of place a map is — room, hall, cavern, town, wild —
+ * and picks its camera distance and framing (see SPACES in src/gfx/field.js).
  */
 
 export const MAPS = {
   room: {
     name: "Tata's Room",
+    space: 'room',
     rows: [
       'hhhhhhhhhh',
       'h========h',
@@ -30,6 +34,7 @@ export const MAPS = {
 
   village: {
     name: 'Tata’s Village',
+    space: 'town',
     rows: [
       'TTTTTTTTTTTTTTTTTTTTTTTTTT',
       'TT......................TT',
@@ -102,6 +107,7 @@ export const MAPS = {
 
   forest: {
     name: 'The Rift Forest',
+    space: 'wild',
     rifts: true,
     rows: [
       'TTTTTTTTTTTTTTTTTT,TTT',
@@ -144,6 +150,7 @@ export const MAPS = {
 
   market: {
     name: 'Market City — Low Quay',
+    space: 'town',
     rows: [
       'wwwwwwwwwwwwwwwwwwwwwwww',
       'wwwwwwwwwwwwwwwwwwwwwwww',
@@ -199,6 +206,7 @@ export const MAPS = {
 
   archives: {
     name: 'The Archives',
+    space: 'hall',
     dark: true,
     rows: [
       '##################',
@@ -230,6 +238,7 @@ export const MAPS = {
 
   well1: {
     name: 'The Old Well — Descent',
+    space: 'cavern',
     dark: true,
     rifts: true,
     rows: [
@@ -263,6 +272,7 @@ export const MAPS = {
 
   well2: {
     name: 'The Old Well — Keeper’s Chamber',
+    space: 'cavern',
     dark: true,
     rifts: true,
     rows: [
