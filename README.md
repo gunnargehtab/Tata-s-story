@@ -78,11 +78,3 @@ it is all still one static folder with no dependencies and no build step.
 If WebGL2 is unavailable the game falls back to the original pixel renderer on
 its own; `TATA_GFX.set(false)` in the console switches back by hand. The pipeline
 is written up in [`docs/visual-rework.md`](docs/visual-rework.md).
-
----
-# future thoughts:
-
-- continue the story into the first major chapter
-- pivot into worldbuilding, mechanics, and faction design
-— the world’s lore foundations, or 
-- Tata’s character sheet
