@@ -50,6 +50,21 @@ Because someone warned her not to let him leave.
 And because the world just changed — and she intends to find out why.
 
 ---
+## ▶ Play the prototype
+
+Phase 1 of the roadmap in [`gameplan.md`](gameplan.md) is playable — movement,
+turn-based combat, the village, Tata & the Traveler, and the Old Well dungeon.
+No dependencies, no build step:
+
+```sh
+python3 -m http.server 8000
+```
+
+…then open `http://localhost:8000` (best on a phone, or a narrow browser window).
+Details, controls and the code map are in
+[`docs/phase-1-prototype.md`](docs/phase-1-prototype.md).
+
+---
 # future thoughts:
 
 - continue the story into the first major chapter

@@ -190,7 +190,7 @@ Monsters spawn from everyday objects
 
 8. Development Roadmap
 
-Phase 1 — Prototype (4–6 weeks)
+Phase 1 — Prototype (4–6 weeks) — ✅ built, see docs/phase-1-prototype.md
 
 Movement
 
