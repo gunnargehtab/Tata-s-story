@@ -72,8 +72,9 @@ something on the way out. That's the Phase 1 seed of the full system in Phase 2.
 ### Notebook
 
 Clues from scripted beats, NPCs and broken enemies are written into
-`G.clues`; the NOTE button shows the log. Phase 2 grows this into the real
-notebook (NPC profiles, rift anomalies, weapon notes).
+`G.clues`; the NOTE button shows the log. Phase 2 grew this into the full
+notebook — dossiers, anomalies and the satchel. See
+[`phase-2-systems.md`](phase-2-systems.md).
 
 ### Saving
 
@@ -124,10 +125,11 @@ by position so ground never visibly tiles.
 - **An enemy**: add an entry to `src/data/enemies.js` and a sprite grid to
   `src/art/sprites.js`, then drop its id into a map's encounter pool.
 
-## Known gaps (deliberately Phase 2+)
+## Known gaps at the end of Phase 1
 
-Full interrogation flow, inventory screen, rift events, branching dialogue,
-sound, the remaining regions, and party members beyond Tata.
+Full interrogation flow, inventory screen, rift events and branching dialogue —
+all delivered in [Phase 2](phase-2-systems.md). Still open: sound, the remaining
+regions, and party members beyond Tata.
 
 ## Debugging
 

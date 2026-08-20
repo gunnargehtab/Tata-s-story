@@ -1,6 +1,7 @@
 import { ENEMIES } from '../data/enemies.js';
-import { SKILLS, ITEMS, TONES } from '../data/skills.js';
-import { G, addClue, grantXp } from './state.js';
+import { SKILLS, TONES } from '../data/skills.js';
+import { ITEMS } from '../data/items.js';
+import { G, addClue, grantXp, stat, carried, takeItem, noteProfile } from './state.js';
 import { SPRITES } from '../art/sprites.js';
 import { PAL } from '../art/palette.js';
 import { inkPanel, text, wrap, bar, drawControls, VIEW } from '../engine/ui.js';
@@ -13,12 +14,16 @@ const COMMANDS = ['Attack', 'Skill', 'Item', 'Interrogate', 'Run'];
 
 /** @param {string[]} ids enemy ids @param {object} opts {boss, onEnd, intro} */
 export function startBattle(ids, opts = {}) {
+  const boost = opts.empower || 1;
   const enemies = ids.map((id, i) => {
     const base = ENEMIES[id];
+    const hp = Math.round(base.hp * boost);
     return {
       ...base,
+      name: boost > 1 ? `Rift-charged ${base.name}` : base.name,
+      atk: Math.round(base.atk * boost),
       slot: i,
-      maxHp: base.hp, curHp: base.hp,
+      maxHp: hp, curHp: hp,
       maxMorale: base.morale, curMorale: base.morale,
       alive: true, stun: 0, mark: 0, revealed: false, shake: 0, flash: 0,
     };
@@ -76,9 +81,10 @@ function damageEnemy(b, e, amount, tag) {
 
 function playerAttack(b, e) {
   const t = G.tata;
-  const hitChance = clamp(0.72 + (t.DEX - e.DEX) * 0.04, 0.35, 0.95);
+  const dex = stat('DEX');
+  const hitChance = clamp(0.72 + (dex - e.DEX) * 0.04, 0.35, 0.95);
   if (Math.random() > hitChance) { say(b, 'The burst goes wide.'); return; }
-  const crit = Math.random() < clamp(t.DEX * 0.012, 0.02, 0.2);
+  const crit = Math.random() < clamp(dex * 0.012, 0.02, 0.2);
   let dmg = t.atk + rand(4) + (crit ? Math.round(t.atk * 0.8) : 0);
   if (crit) say(b, 'Clean line of sight —');
   damageEnemy(b, e, dmg, 'smg');
@@ -110,8 +116,7 @@ function labelForTag(tag) {
 }
 
 function interrogate(b, tone, e) {
-  const t = G.tata;
-  const roll = Math.round(t.INT * tone.power) + rand(5) - (e.RES + tone.res);
+  const roll = Math.round(stat('INT') * tone.power) + rand(5) - (e.RES + tone.res);
   say(b, `Tata, ${tone.name.toLowerCase()}: "${questionFor(e, tone)}"`);
   if (roll <= 0) {
     e.curMorale = Math.min(e.maxMorale, e.curMorale + 1);
@@ -129,6 +134,8 @@ function interrogate(b, tone, e) {
     b.xp += Math.round(e.xp * 0.6);
     say(b, e.breaks);
     if (e.clue && addClue(e.clue.id, e.clue.text)) say(b, `Notebook: ${e.clue.text}`);
+    noteProfile(e.id, { name: e.name, role: 'Broke off mid-fight rather than answer.', broken: true });
+    if (e.drop) { G.items[e.drop] = (G.items[e.drop] || 0) + 1; say(b, `Left behind: ${ITEMS[e.drop].name}.`); }
   }
 }
 
@@ -144,10 +151,13 @@ function questionFor(e, tone) {
 
 function useItem(b, key) {
   const item = ITEMS[key];
-  if (!G.items[key]) { say(b, `No ${item.name.toLowerCase()} left.`); return false; }
-  G.items[key]--;
-  if (item.heal) { G.tata.hp = Math.min(G.tata.maxHp, G.tata.hp + item.heal); }
-  if (item.foc) { G.tata.foc = Math.min(G.tata.maxFoc, G.tata.foc + item.foc); }
+  if (!item || !takeItem(key)) { say(b, 'Nothing like that in the satchel.'); return false; }
+  if (item.heal) G.tata.hp = Math.min(G.tata.maxHp, G.tata.hp + item.heal);
+  if (item.foc) G.tata.foc = Math.min(G.tata.maxFoc, G.tata.foc + item.foc);
+  if (item.battleBuff) {
+    G.battleBuff = { ...(G.battleBuff || {}), ...item.battleBuff };
+    say(b, 'The nail goes warm. The rift-cold slides off her.');
+  }
   say(b, item.text);
   return true;
 }
@@ -168,10 +178,10 @@ function enemyTurn(b) {
     if (e.stun > 0) { e.stun--; say(b, `${e.name} is still seeing white.`); continue; }
     if (e.mark > 0) e.mark--;
     const t = G.tata;
-    const hitChance = clamp(0.7 + (e.DEX - t.DEX) * 0.04, 0.3, 0.95);
+    const hitChance = clamp(0.7 + (e.DEX - stat('DEX')) * 0.04, 0.3, 0.95);
     if (Math.random() > hitChance) { say(b, `${e.name} misses.`); continue; }
     const raw = e.atk + rand(4);
-    const dmg = Math.max(1, raw - Math.round(t.RES * 0.5));
+    const dmg = Math.max(1, raw - Math.round(stat('RES') * 0.5));
     t.hp = Math.max(0, t.hp - dmg);
     b.shakeScreen = 0.22;
     say(b, `${e.name} hits Tata for ${dmg}.`);
@@ -257,6 +267,7 @@ function resolveAfter(b) {
 }
 
 function finish(b) {
+  G.battleBuff = null;
   const cb = b.onEnd;
   const result = b.result;
   G.battle = null;
@@ -321,7 +332,7 @@ function moveIndex(b, delta, len) {
 
 function currentList(b) {
   if (b.submenu === 'skill') return SKILLS;
-  if (b.submenu === 'item') return Object.values(ITEMS);
+  if (b.submenu === 'item') return carried('consumable');
   if (b.submenu === 'tone') return TONES;
   return COMMANDS;
 }
@@ -345,7 +356,9 @@ function select(b) {
     b.pending = { kind: 'skill', skill };
     beginTarget(b);
   } else if (b.submenu === 'item') {
-    const key = Object.keys(ITEMS)[b.subCursor];
+    const bag = carried('consumable');
+    if (!bag.length) { b.messages.push('The satchel is empty.'); b.phase = 'msg'; b.after = 'menu'; return; }
+    const key = bag[Math.min(b.subCursor, bag.length - 1)].id;
     commitAction(b, () => useItem(b, key));
   } else if (b.submenu === 'tone') {
     b.pending = { kind: 'tone', tone: TONES[b.subCursor] };
@@ -449,9 +462,10 @@ function drawStatus(ctx) {
   bar(ctx, 110, 330, 100, 9, t.hp / t.maxHp, PAL.R);
   text(ctx, `FOC ${t.foc}/${t.maxFoc}`, 20, 346, { size: 11 });
   bar(ctx, 110, 346, 100, 9, t.foc / t.maxFoc, PAL.B);
-  text(ctx, `INT ${t.INT}  DEX ${t.DEX}`, 224, 330, { size: 10 });
-  text(ctx, `PER ${t.PER}  RES ${t.RES}`, 224, 346, { size: 10 });
-  text(ctx, `${G.items.bandage} bandage · ${G.items.tonic} tonic`, 20, 362, { size: 10, color: PAL.g });
+  text(ctx, `INT ${stat('INT')}  DEX ${stat('DEX')}`, 224, 330, { size: 10 });
+  text(ctx, `PER ${stat('PER')}  RES ${stat('RES')}`, 224, 346, { size: 10 });
+  const bag = carried('consumable').map((i) => `${G.items[i.id]} ${i.name.toLowerCase()}`).join(' · ');
+  text(ctx, bag || 'satchel empty', 20, 362, { size: 10, color: PAL.g });
 }
 
 function drawPanel(ctx, b) {

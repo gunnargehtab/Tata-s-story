@@ -1,6 +1,7 @@
 import { MAPS, prepareMap } from '../data/maps.js';
+import { ITEMS } from '../data/items.js';
 
-const SAVE_KEY = 'tata-prototype-v1';
+const SAVE_KEY = 'tata-prototype-v2';
 
 export function newTata() {
   return {
@@ -25,7 +26,12 @@ export const G = {
   flags: {},
   clues: [],
   items: { bandage: 3, tonic: 2 },
+  tool: null,          // the one tool in hand; shifts stats
+  profiles: {},        // dossiers on people Tata has talked to or broken
+  anomalies: [],       // rift events witnessed
+  lore: [],            // fragments worth keeping
   steps: 0,
+  rift: null,          // the live rift event, if one is open
   battle: null,
   actors: [],   // scripted, non-map actors (the Traveler, the dog)
   time: 0,
@@ -40,6 +46,8 @@ export function enterMap(id, x, y, facing = 'down') {
   G.player.moving = false;
   G.player.path.length = 0;
   G.actors = [];
+  G.rift = null;        // rifts belong to the map they tore open in
+  G.battleBuff = null;
   // NPC live positions are kept on the map object itself.
   for (const npc of G.map.npcs || []) {
     if (npc.cx === undefined) { npc.cx = npc.x; npc.cy = npc.y; npc.frame = 0; npc.dir = npc.facing || 'down'; }
@@ -50,6 +58,66 @@ export function addClue(id, text) {
   if (G.clues.some((c) => c.id === id)) return false;
   G.clues.push({ id, text });
   return true;
+}
+
+export const hasClue = (id) => G.clues.some((c) => c.id === id);
+
+// --- inventory -----------------------------------------------------------
+
+export function addItem(id, n = 1) {
+  if (!ITEMS[id]) return false;
+  G.items[id] = (G.items[id] || 0) + n;
+  return true;
+}
+
+export function takeItem(id, n = 1) {
+  if (!G.items[id] || G.items[id] < n) return false;
+  G.items[id] -= n;
+  if (G.items[id] <= 0) delete G.items[id];
+  return true;
+}
+
+export const hasItem = (id) => (G.items[id] || 0) > 0;
+
+export function carried(kind) {
+  return Object.keys(G.items)
+    .filter((id) => ITEMS[id] && (!kind || ITEMS[id].kind === kind) && G.items[id] > 0)
+    .map((id) => ITEMS[id]);
+}
+
+/** Equips a tool, or unequips when the same one is chosen again. */
+export function equipTool(id) {
+  G.tool = G.tool === id ? null : id;
+  return G.tool;
+}
+
+/** A stat with the carried tool folded in — always use this, never tata.PER directly. */
+export function stat(key) {
+  const base = G.tata[key] || 0;
+  const tool = G.tool && ITEMS[G.tool];
+  const bonus = tool && tool.bonus ? (tool.bonus[key] || 0) : 0;
+  const battle = G.battleBuff ? (G.battleBuff[key] || 0) : 0;
+  return Math.max(0, base + bonus + battle);
+}
+
+// --- dossiers, anomalies, lore ------------------------------------------
+
+/** Notes what Tata knows about a person. Repeated calls merge. */
+export function noteProfile(id, patch) {
+  const p = G.profiles[id] || (G.profiles[id] = { id, notes: [] });
+  for (const [k, v] of Object.entries(patch)) {
+    if (k === 'note') { if (v && !p.notes.includes(v)) p.notes.push(v); }
+    else p[k] = v;
+  }
+  return p;
+}
+
+export function noteAnomaly(text) {
+  if (!G.anomalies.includes(text)) G.anomalies.push(text);
+}
+
+export function noteLore(text) {
+  if (!G.lore.includes(text)) G.lore.push(text);
 }
 
 const XP_TABLE = [0, 24, 60, 120, 210, 340];
@@ -74,6 +142,7 @@ export function save() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       mapId: G.mapId, x: G.player.x, y: G.player.y, facing: G.player.facing,
       tata: G.tata, flags: G.flags, clues: G.clues, items: G.items,
+      tool: G.tool, profiles: G.profiles, anomalies: G.anomalies, lore: G.lore,
     }));
   } catch { /* private mode: play on without saving */ }
 }
@@ -87,7 +156,11 @@ export function loadSave() {
     G.tata = { ...newTata(), ...d.tata };
     G.flags = d.flags || {};
     G.clues = d.clues || [];
-    G.items = { ...G.items, ...(d.items || {}) };
+    G.items = d.items || { bandage: 3, tonic: 2 };
+    G.tool = d.tool || null;
+    G.profiles = d.profiles || {};
+    G.anomalies = d.anomalies || [];
+    G.lore = d.lore || [];
     enterMap(d.mapId, d.x, d.y, d.facing);
     return true;
   } catch { return false; }

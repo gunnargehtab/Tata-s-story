@@ -1,4 +1,4 @@
-import { G, addClue, enterMap, save } from './state.js';
+import { G, addClue, addItem, enterMap, noteLore, save } from './state.js';
 import { runScript } from './cutscene.js';
 import { showDialogue } from './dialogue.js';
 
@@ -14,11 +14,17 @@ export const SCRIPTS = {
         { who: 'Tata', text: 'Three. Then two. Then one. Somebody is counting down to something.' },
         'She pries up the loose board. A metal capsule lies in the dust, warm, humming a soft blue.',
       ] },
-      { fn: () => { addClue('note', 'Capsule note: "He’s here. The traveler. Don’t let him leave."'); } },
+      { fn: () => {
+        addClue('note', 'Capsule note: "He’s here. The traveler. Don’t let him leave."');
+        addItem('capsule');
+        addItem('lens');
+        noteLore('The capsule was warm before she touched it, and it has been humming since.');
+      } },
       { say: [
         '"He’s here. The traveler. Don’t let him leave." No signature. No explanation.',
         { who: 'Tata', text: 'Fine. I have questions and a coat.' },
         'Satchel: notebook, flashlight, compact SMG, magnifying glass. Out into the not-quite-quiet night.',
+        { who: 'Notebook', text: 'The capsule and the lens go in the satchel. Tap NOTE to read either one.' },
       ] },
       { flag: 'capsule' },
       { save: true },
@@ -102,16 +108,25 @@ export const SCRIPTS = {
         },
       } },
       { say: [
-        'The light goes out. In the dark, the chamber is just a room with a hole in the floor.',
-        { who: 'Tata', text: 'Posted here to keep something in. Not to keep me out.' },
+        'The light goes out. The shape does not fall so much as stop holding itself up.',
+        { who: 'Tata', text: 'Good. Now the part I am actually good at.' },
       ] },
-      { fn: () => { addClue('phase1', 'The well was a door. The Traveler did not open it — he arrived through it.'); } },
       { flag: 'keeperDown' },
+      { save: true },
+      { say: [
+        { who: 'Notebook', text: 'PRESS makes them talk. OBSERVE finds the lie. PRESENT puts proof against it.' },
+      ] },
+      { interro: { id: 'keeper' } },
+      { fn: () => {
+        addClue('phase1', 'The well was a door. The Traveler did not open it — he arrived through it.');
+        noteLore('Doors have two sides. Someone on ours was told to stand at it and never told why.');
+      } },
       { flag: 'phase1complete' },
       { save: true },
       { say: [
-        'END OF PROTOTYPE — Act I, Scene One.',
-        'Phase 2 picks up here: full interrogations, the notebook, inventory, rift events and branching dialogue.',
+        'Tata climbs out of the well as the first grey comes up over the roofs.',
+        'END OF SLICE — Act I, Scene One.',
+        'Act II picks up here: the rifts spread, and the people who profit from them stop being polite.',
       ] },
     ]);
   },

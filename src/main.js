@@ -5,6 +5,9 @@ import { initInput, Input, endFrame } from './engine/input.js';
 import { G, enterMap, loadSave, hasSave, clearSave, newTata } from './game/state.js';
 import { updateWorld, drawWorld, World } from './game/world.js';
 import { updateBattle, drawBattle } from './game/battle.js';
+import { updateInterrogation, drawInterrogation, Interro } from './game/interrogation.js';
+import { Notebook } from './game/notebook.js';
+import { Talk } from './game/talk.js';
 import { Cut } from './game/cutscene.js';
 import { showDialogue, Dialog } from './game/dialogue.js';
 import { PAL } from './art/palette.js';
@@ -84,6 +87,11 @@ function startNewCase() {
   G.flags = {};
   G.clues = [];
   G.items = { bandage: 3, tonic: 2 };
+  G.tool = null;
+  G.profiles = {};
+  G.anomalies = [];
+  G.lore = [];
+  G.rift = null;
   G.steps = 0;
   enterMap('room', 4, 6, 'up');
   G.scene = 'world';
@@ -105,6 +113,7 @@ function frame(now) {
 
   if (G.scene === 'title') { updateTitle(); drawTitle(); }
   else if (G.scene === 'battle') { updateBattle(dt); drawBattle(ctx); }
+  else if (G.scene === 'interrogation') { updateInterrogation(dt); drawInterrogation(ctx); }
   else { updateWorld(dt); drawWorld(ctx); }
 
   endFrame();
@@ -113,6 +122,6 @@ function frame(now) {
 
 // handy while prototyping: inspect live state from the console
 window.TATA = G;
-window.TATA_DEBUG = { Dialog, Cut, World };
+window.TATA_DEBUG = { Dialog, Cut, World, Notebook, Talk, Interro };
 
 requestAnimationFrame(frame);

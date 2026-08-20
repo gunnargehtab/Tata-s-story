@@ -1,6 +1,7 @@
 import { G, enterMap, save } from './state.js';
 import { showDialogue, Dialog } from './dialogue.js';
 import { startBattle } from './battle.js';
+import { startInterrogation } from './interrogation.js';
 
 /*
  * Tiny step-runner for scripted beats. A script is an array of steps:
@@ -12,6 +13,7 @@ import { startBattle } from './battle.js';
  *   { despawn: id }
  *   { flag: 'name' }
  *   { battle: {ids, boss, intro, onLose} }
+ *   { interro: {id} }           a full interrogation, resumed when it ends
  *   { enterMap: {id, x, y, facing} }
  *   { fn: () => {} }
  *   { save: true }
@@ -52,6 +54,13 @@ function step() {
   if (s.enterMap) { enterMap(s.enterMap.id, s.enterMap.x, s.enterMap.y, s.enterMap.facing); return step(); }
   if (s.fn) { s.fn(); return step(); }
   if (s.save) { save(); return step(); }
+  if (s.interro) {
+    Cut.blocking = true;
+    startInterrogation(s.interro.id, {
+      onEnd: () => { Cut.blocking = false; step(); },
+    });
+    return;
+  }
   if (s.battle) {
     Cut.blocking = true;
     startBattle(s.battle.ids, {
