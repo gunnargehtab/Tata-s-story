@@ -55,5 +55,5 @@ function guarded(fn, onFail) {
 export const drawWorld3D = guarded(drawField3D, false);
 export const drawBattleScene = guarded(drawBattle3D, null);
 
-export { fieldProject, fieldUnproject } from './field.js';
+export { fieldProject, fieldUnproject, fieldPPU } from './field.js';
 export { fxAct, fxHit, fxImpact, resetBattleFx } from './battle3d.js';
