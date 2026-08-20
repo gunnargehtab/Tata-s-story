@@ -18,7 +18,7 @@ layout(location = 3) in float aPart;
 uniform mat4 uProj;
 uniform mat4 uView;
 uniform mat4 uModel;
-uniform mat4 uParts[12];
+uniform mat4 uParts[16];
 uniform float uSnap;      // 0 = off, else the vertical grid the PS1 wobble snaps to
 uniform float uOutline;   // world-space push along the normal for the ink pass
 
