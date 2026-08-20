@@ -6,6 +6,7 @@ import { SPRITES } from '../art/sprites.js';
 import { PAL } from '../art/palette.js';
 import { inkPanel, text, wrap, bar, drawControls, VIEW } from '../engine/ui.js';
 import { Input } from '../engine/input.js';
+import { gfxEnabled, drawBattleScene, fxAct, fxHit, fxImpact, resetBattleFx } from '../gfx/index.js';
 
 const rand = (n) => Math.floor(Math.random() * n);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -44,7 +45,10 @@ export function startBattle(ids, opts = {}) {
     onEnd: opts.onEnd || null,
     hitRects: [],
     shakeScreen: 0,
+    tataHurt: 0,
+    dt: 0,
   };
+  resetBattleFx();
   const b = G.battle;
   say(b, opts.intro || `${enemies.length > 1 ? 'Something moves' : enemies[0].name + ' blocks the way'}.`);
   for (const e of enemies) if (e.barks) say(b, e.barks[rand(e.barks.length)]);
@@ -70,9 +74,12 @@ function damageEnemy(b, e, amount, tag) {
   e.curHp = Math.max(0, e.curHp - dmg);
   e.shake = 0.3; e.flash = 0.2;
   b.shakeScreen = 0.18;
+  fxHit(e.slot, 'hit');
+  fxImpact(e.slot, b.enemies.length, note ? PAL.B : PAL.R);
   say(b, `${e.name} takes ${dmg}.${note}`);
   if (e.curHp === 0) {
     e.alive = false;
+    fxHit(e.slot, 'down');
     b.xp += e.xp;
     if (e.clue && addClue(e.clue.id, e.clue.text)) say(b, `Notebook: ${e.clue.text}`);
     say(b, `${e.name} comes apart into ordinary things.`);
@@ -81,6 +88,7 @@ function damageEnemy(b, e, amount, tag) {
 
 function playerAttack(b, e) {
   const t = G.tata;
+  fxAct('attack', e.slot);
   const dex = stat('DEX');
   const hitChance = clamp(0.72 + (dex - e.DEX) * 0.04, 0.35, 0.95);
   if (Math.random() > hitChance) { say(b, 'The burst goes wide.'); return; }
@@ -94,6 +102,7 @@ function useSkill(b, skill, e) {
   const t = G.tata;
   if (t.foc < skill.cost) { say(b, 'Not enough focus.'); return false; }
   t.foc -= skill.cost;
+  fxAct('cast', e.slot);
   say(b, skill.flavor);
   if (skill.reveal) {
     e.revealed = true;
@@ -116,6 +125,7 @@ function labelForTag(tag) {
 }
 
 function interrogate(b, tone, e) {
+  fxAct('interrogate', e.slot);
   const roll = Math.round(stat('INT') * tone.power) + rand(5) - (e.RES + tone.res);
   say(b, `Tata, ${tone.name.toLowerCase()}: "${questionFor(e, tone)}"`);
   if (roll <= 0) {
@@ -184,6 +194,7 @@ function enemyTurn(b) {
     const dmg = Math.max(1, raw - Math.round(stat('RES') * 0.5));
     t.hp = Math.max(0, t.hp - dmg);
     b.shakeScreen = 0.22;
+    b.tataHurt = 0.35;
     say(b, `${e.name} hits Tata for ${dmg}.`);
     if (t.hp === 0) { say(b, 'Tata goes down on one knee. The notebook lands open.'); return; }
   }
@@ -207,7 +218,9 @@ function moveCursor(b, dt) {
 export function updateBattle(dt) {
   const b = G.battle;
   if (!b) return;
+  b.dt = dt;
   b.shakeScreen = Math.max(0, b.shakeScreen - dt);
+  b.tataHurt = Math.max(0, b.tataHurt - dt);
   for (const e of b.enemies) { e.shake = Math.max(0, e.shake - dt); e.flash = Math.max(0, e.flash - dt); }
 
   if (b.phase === 'msg') {
@@ -396,8 +409,11 @@ export function drawBattle(ctx) {
   ctx.translate(shake, 0);
   b.hitRects = [];
 
-  drawField(ctx, b);
-  drawEnemies(ctx, b);
+  const rects = gfxEnabled()
+    ? drawBattleScene(ctx, b, b.dt || 0, { dark: !!G.map?.dark, down: G.tata.hp === 0, hurt: b.tataHurt })
+    : null;
+  if (rects) drawEnemies3D(ctx, b, rects);
+  else { drawField(ctx, b); drawEnemies(ctx, b); }
   drawStatus(ctx);
   drawPanel(ctx, b);
 
@@ -418,6 +434,42 @@ function drawField(ctx, b) {
   }
   ctx.fillStyle = PAL.K;
   ctx.fillRect(0, GROUND_Y, VIEW.width, 3);
+}
+
+/**
+ * Labels for the 3D scene: the models are drawn by the renderer, so this only
+ * hangs the ink UI — name, bars, target arrow — off each projected silhouette.
+ */
+function drawEnemies3D(ctx, b, rects) {
+  const spaced = rects.length > 1;    // two silhouettes can stand close enough to collide
+  const crowded = rects.length > 2;
+  const bw = crowded ? 66 : 84;
+  rects.forEach((r, slot) => {
+    const e = b.enemies[r.index];
+    if (!e || !e.alive) return;
+    // crowded fights get evenly spaced label slots; the target arrow still sits
+    // on the model itself, so aiming stays honest
+    const cx = spaced
+      ? Math.round(((slot + 0.5) / rects.length) * VIEW.width)
+      : clamp(Math.round(r.cx), bw / 2 + 8, VIEW.width - bw / 2 - 8);
+    const bx = Math.round(cx - bw / 2);
+    const label = crowded && e.name.length > 14 ? `${e.name.slice(0, 13)}…` : e.name;
+    text(ctx, label, cx, 256, { size: crowded ? 9 : 11, align: 'center', bold: true });
+    if (!crowded) {
+      text(ctx, 'HP', bx - 26, 271, { size: 9, color: PAL.g });
+      text(ctx, 'MOR', bx - 26, 281, { size: 9, color: PAL.g });
+    }
+    bar(ctx, bx, 272, bw, 7, e.curHp / e.maxHp, PAL.R);
+    bar(ctx, bx, 281, bw, 5, e.curMorale / e.maxMorale, PAL.B);
+    if (e.revealed) text(ctx, `weak: ${labelForTag(e.weakness)}`, cx, 289, { size: 9, align: 'center', color: PAL.b });
+    b.hitRects.push({ kind: 'enemy', index: r.index, x: r.x, y: r.y, w: r.w, h: r.h });
+    if (b.phase === 'target' && b.target === r.index) {
+      ctx.fillStyle = PAL.K;
+      const ay = Math.max(10, Math.round(r.y) - 14);
+      ctx.fillRect(Math.round(r.cx) - 6, ay, 12, 4);
+      ctx.fillRect(Math.round(r.cx) - 3, ay + 4, 6, 4);
+    }
+  });
 }
 
 function drawEnemies(ctx, b) {

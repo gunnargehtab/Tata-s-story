@@ -66,6 +66,19 @@ Details, controls and the code map are in
 [`docs/phase-1-prototype.md`](docs/phase-1-prototype.md); the Phase 2 systems are
 written up in [`docs/phase-2-systems.md`](docs/phase-2-systems.md).
 
+### The look
+
+The game now renders in **2.5D**, the way Final Fantasy VII did it: each map is
+modelled in 3D and baked once into a background image *and its depth buffer*,
+then low-poly characters are drawn live on top — so Tata is correctly hidden when
+she walks behind a house that is only a picture. Battles are full real-time 3D.
+Everything is toon-shaded with cross-hatch ink and PS1-style vertex wobble, and
+it is all still one static folder with no dependencies and no build step.
+
+If WebGL2 is unavailable the game falls back to the original pixel renderer on
+its own; `TATA_GFX.set(false)` in the console switches back by hand. The pipeline
+is written up in [`docs/visual-rework.md`](docs/visual-rework.md).
+
 ---
 # future thoughts:
 
