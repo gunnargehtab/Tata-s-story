@@ -13,50 +13,79 @@ export const P = {
   ROOT: 0, TORSO: 1, HEAD: 2, HAT: 3,
   ARM_L: 4, ARM_R: 5, LEG_L: 6, LEG_R: 7,
   PROP: 8, EXTRA: 9,
+  FORE_L: 10, FORE_R: 11, SHIN_L: 12, SHIN_R: 13,
 };
 
-/** Pivot positions for the humanoid rig, in model space with feet at y = 0. */
+/**
+ * Pivot positions for the humanoid rig, in model space with feet at y = 0.
+ * Forearms, shins and the prop are chained parts (see HUMAN_RIG.chain): their
+ * geometry is authored around their own pivot but they inherit the rotation of
+ * the limb above them, which is what makes elbows and knees bend.
+ */
 const HUMAN_PIVOTS = [
   [0, 0, 0],        // ROOT
   [0, 0.52, 0],     // TORSO
   [0, 1.04, 0],     // HEAD
   [0, 1.20, 0],     // HAT
-  [0.20, 0.96, 0],  // ARM_L (+x is her left on screen)
-  [-0.20, 0.96, 0], // ARM_R
-  [0.09, 0.52, 0],  // LEG_L
+  [0.21, 0.96, 0],  // ARM_L — shoulder (+x is her left on screen)
+  [-0.21, 0.96, 0], // ARM_R
+  [0.09, 0.52, 0],  // LEG_L — hip
   [-0.09, 0.52, 0], // LEG_R
-  [0.24, 0.88, 0.10], // PROP — notebook / weapon hand
+  [0.21, 0.48, 0.02], // PROP — sits in the left hand, chained through the arm
   [0, 0.52, 0],     // EXTRA — cloaks, tails, satchels
+  [0.21, 0.72, 0],  // FORE_L — elbow
+  [-0.21, 0.72, 0], // FORE_R
+  [0.09, 0.26, 0],  // SHIN_L — knee
+  [-0.09, 0.26, 0], // SHIN_R
 ];
+
+// upper/lower limb lengths, matched to the pivots above
+const ARM_UP = 0.24, ARM_LO = 0.22, LEG_UP = 0.26, LEG_LO = 0.26;
 
 // --------------------------------------------------------------- humanoids
 
-/** Shared body: legs, torso, arms, head. Accessories are layered on top. */
+/**
+ * Shared body: two-segment legs and arms, torso, neck, head. Accessories are
+ * layered on top. Limb segment lengths are fixed to the rig's elbow and knee
+ * pivots, so every humanoid articulates the same way.
+ */
 function humanoid(b, opts) {
   const {
     coat = PAL.K, shirt = PAL.W, trouser = PAL.k, skin = PAL.S,
     torsoW = 0.34, torsoH = 0.52, torsoD = 0.20, taper = 0.86,
-    legH = 0.52, armH = 0.42, headR = 0.15, boots = PAL.t,
+    headR = 0.15, boots = PAL.t,
   } = opts;
 
-  b.part(P.LEG_L).color(trouser);
-  b.box({ x: 0, y: -legH / 2, z: 0, w: 0.13, h: legH, d: 0.14 });
-  b.color(boots).box({ x: 0, y: -legH + 0.04, z: 0.02, w: 0.15, h: 0.09, d: 0.19 });
-  b.part(P.LEG_R).color(trouser);
-  b.box({ x: 0, y: -legH / 2, z: 0, w: 0.13, h: legH, d: 0.14 });
-  b.color(boots).box({ x: 0, y: -legH + 0.04, z: 0.02, w: 0.15, h: 0.09, d: 0.19 });
+  // thighs hang from the hips, shins from the knees, boots on the shins
+  for (const part of [P.LEG_L, P.LEG_R]) {
+    b.part(part).color(trouser);
+    b.box({ x: 0, y: -LEG_UP / 2, z: 0, w: 0.135, h: LEG_UP + 0.05, d: 0.15, taperX: 0.92, taperZ: 0.92 });
+  }
+  for (const part of [P.SHIN_L, P.SHIN_R]) {
+    b.part(part).color(trouser);
+    b.box({ x: 0, y: -LEG_LO / 2 + 0.02, z: 0, w: 0.115, h: LEG_LO, d: 0.13 });
+    b.color(boots).box({ x: 0, y: -LEG_LO + 0.045, z: 0.025, w: 0.14, h: 0.09, d: 0.19 });
+  }
 
   b.part(P.TORSO).color(coat);
   b.box({ x: 0, y: torsoH / 2, z: 0, w: torsoW, h: torsoH, d: torsoD, taperX: taper, taperZ: taper });
+  // coat hem flaring over the hips, so the waist reads through a turn
+  b.box({ x: 0, y: -0.04, z: 0, w: torsoW + 0.10, h: 0.15, d: torsoD + 0.09, taperX: 0.78, taperZ: 0.78 });
   // shirt front: a lighter slab so the silhouette reads against the coat
   b.color(shirt).box({ x: 0, y: torsoH * 0.55, z: torsoD / 2 - 0.005, w: torsoW * 0.34, h: torsoH * 0.6, d: 0.03 });
   b.color(coat).box({ x: 0, y: torsoH - 0.03, z: 0, w: torsoW + 0.06, h: 0.06, d: torsoD + 0.04 });  // shoulders
+  b.color(skin).box({ x: 0, y: torsoH + 0.015, z: 0, w: 0.10, h: 0.08, d: 0.10 });                   // neck
 
-  for (const [part, side] of [[P.ARM_L, 1], [P.ARM_R, -1]]) {
+  // upper arms with a shoulder cap; forearms carry the cuff and the hand
+  for (const part of [P.ARM_L, P.ARM_R]) {
     b.part(part).color(coat);
-    b.box({ x: 0, y: -armH / 2, z: 0, w: 0.10, h: armH, d: 0.11 });
-    b.color(skin).box({ x: 0, y: -armH - 0.03, z: 0, w: 0.09, h: 0.08, d: 0.10 });
-    void side;
+    b.box({ x: 0, y: -ARM_UP / 2, z: 0, w: 0.105, h: ARM_UP + 0.05, d: 0.115 });
+    b.box({ x: 0, y: 0.005, z: 0, w: 0.135, h: 0.075, d: 0.145 });
+  }
+  for (const part of [P.FORE_L, P.FORE_R]) {
+    b.part(part).color(coat);
+    b.box({ x: 0, y: -ARM_LO / 2 + 0.02, z: 0, w: 0.095, h: ARM_LO, d: 0.105 });
+    b.color(skin).box({ x: 0, y: -ARM_LO - 0.015, z: 0, w: 0.09, h: 0.09, d: 0.10 });   // hand
   }
 
   b.part(P.HEAD).color(skin);
@@ -90,6 +119,7 @@ export const MODELS = {
   /** Tata: hat, hair, coat, satchel, and the compact SMG she should not have. */
   tata(b) {
     humanoid(b, { coat: '#2f2a3d', shirt: PAL.W, trouser: PAL.k, torsoW: 0.32, torsoH: 0.50 });
+    b.part(P.TORSO).color(PAL.K).box({ x: 0, y: 0.05, z: 0, w: 0.35, h: 0.05, d: 0.23 });   // belt
     longHair(b);
     borsalino(b);
     b.part(P.EXTRA).color(PAL.t);
@@ -141,7 +171,7 @@ export const MODELS = {
   },
 
   teacher(b) {
-    humanoid(b, { coat: '#5b4a6b', shirt: PAL.W, trouser: '#4a3d55', torsoW: 0.32, legH: 0.40 });
+    humanoid(b, { coat: '#5b4a6b', shirt: PAL.W, trouser: '#4a3d55', torsoW: 0.32 });
     b.part(P.TORSO).color('#4a3d55').box({ x: 0, y: 0.06, z: 0, w: 0.36, h: 0.34, d: 0.30, taperX: 1.5, taperZ: 1.4 });  // long skirt
     capNPC(b, '#5b4a6b', 0.26);
   },
@@ -313,7 +343,17 @@ function capNPC(b, color, r = 0.24) {
  * hound, wisp) is authored mostly in absolute model space, so their pivots are
  * only set where a joint actually swings.
  */
-const HUMAN_RIG = { pivots: HUMAN_PIVOTS.map((p, i) => (i === P.EXTRA ? [0, 0.30, 0] : p)), gait: 'human' };
+const HUMAN_RIG = {
+  pivots: HUMAN_PIVOTS.map((p, i) => (i === P.EXTRA ? [0, 0.30, 0] : p)),
+  gait: 'human',
+  // child part -> parent part: forearms follow upper arms, shins follow thighs,
+  // and whatever is in the hand follows the left forearm
+  chain: {
+    [P.FORE_L]: P.ARM_L, [P.FORE_R]: P.ARM_R,
+    [P.SHIN_L]: P.LEG_L, [P.SHIN_R]: P.LEG_R,
+    [P.PROP]: P.FORE_L,
+  },
+};
 
 const zeros = () => HUMAN_PIVOTS.map(() => [0, 0, 0]);
 function rig(overrides, gait) {
