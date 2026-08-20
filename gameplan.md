@@ -227,7 +227,7 @@ Rift events
 
 Dialogue branching
 
-Phase 3 — Content (10–14 weeks)
+Phase 3 — Content (10–14 weeks) — ✅ built, see docs/phase-3-content.md
 
 Regions
 

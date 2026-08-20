@@ -1,5 +1,6 @@
-import { G, carried, takeItem, equipTool, stat } from './state.js';
+import { G, carried, takeItem, equipTool, equipWeapon, ownedWeapons, stat, heldWeapon } from './state.js';
 import { ITEMS } from '../data/items.js';
+import { QUESTS } from '../data/quests.js';
 import { PAL } from '../art/palette.js';
 import { VIEW, inkPanel, text, wrap } from '../engine/ui.js';
 import { Input } from '../engine/input.js';
@@ -18,7 +19,7 @@ export const Notebook = {
   toastT: 0,
 };
 
-const TABS = ['CASE', 'PEOPLE', 'RIFTS', 'KIT', 'LORE'];
+const TABS = ['CASE', 'JOBS', 'WHO', 'RIFTS', 'KIT', 'LORE'];
 
 const TOP = 56, BOTTOM = 556;
 const PAGE_X = 16, PAGE_W = VIEW.width - 32;
@@ -59,6 +60,10 @@ export function updateNotebook(dt) {
     }
     if (hit.kind === 'tab') { nb.tab = hit.index; nb.scroll = 0; }
     else if (hit.kind === 'item') useEntry(hit.id);
+    else if (hit.kind === 'weapon') {
+      equipWeapon(hit.id);
+      toast(`In her hands: ${heldWeapon().name}.`);
+    }
     else if (hit.kind === 'close') closeNotebook();
   }
 }
@@ -114,7 +119,7 @@ export function drawNotebook(ctx) {
   ctx.rect(PAGE_X, TOP, PAGE_W, BOTTOM - TOP);
   ctx.clip();
   const cursor = { y: TOP + 8 - nb.scroll };
-  const painter = [drawCase, drawPeople, drawRifts, drawKit, drawLore][nb.tab];
+  const painter = [drawCase, drawJobs, drawPeople, drawRifts, drawKit, drawLore][nb.tab];
   painter(ctx, cursor);
   ctx.restore();
 
@@ -170,7 +175,9 @@ function drawCase(ctx, cur) {
   para(ctx, cur, `HP ${t.hp}/${t.maxHp}   FOC ${t.foc}/${t.maxFoc}`, { size: 12 });
   para(ctx, cur, `INT ${stat('INT')}  DEX ${stat('DEX')}  PER ${stat('PER')}  RES ${stat('RES')}`,
     { size: 11, color: PAL.g });
-  if (G.tool) para(ctx, cur, `In hand: ${ITEMS[G.tool].name}`, { size: 11, color: PAL.b });
+  para(ctx, cur, `Holding ${heldWeapon().name}${G.tool ? ` · ${ITEMS[G.tool].name} in hand` : ''}`,
+    { size: 11, color: PAL.b });
+  para(ctx, cur, `${G.coin} coin`, { size: 11, color: PAL.g });
   cur.y += 8;
 
   heading(ctx, cur, 'CLUES', `${G.clues.length}`);
@@ -178,6 +185,26 @@ function drawCase(ctx, cur) {
   for (const clue of G.clues) {
     para(ctx, cur, `— ${clue.text}`);
     cur.y += 6;
+  }
+}
+
+function drawJobs(ctx, cur) {
+  const taken = Object.keys(G.quests).map((id) => QUESTS[id]).filter(Boolean);
+  const active = taken.filter((q) => G.quests[q.id].state === 'active');
+  heading(ctx, cur, 'JOBS', `${active.length} open`);
+  if (!taken.length) return empty(ctx, cur, 'Nobody has asked her for anything yet. They will.');
+
+  for (const q of taken) {
+    const st = G.quests[q.id];
+    const done = st.state === 'done';
+    text(ctx, q.title, PAGE_X + 8, cur.y, { size: 12, bold: true, color: done ? PAL.g : PAL.K });
+    text(ctx, done ? 'closed' : 'open', VIEW.width - 34, cur.y + 2, { size: 9, align: 'right', color: done ? PAL.g : PAL.b });
+    cur.y += LINE;
+    para(ctx, cur, q.blurb, { size: 10, color: PAL.g });
+    if (done) para(ctx, cur, q.done, { size: 11 });
+    else para(ctx, cur, `→ ${q.steps[Math.min(st.step, q.steps.length - 1)]}`, { size: 11 });
+    para(ctx, cur, `from ${q.giver}`, { size: 9, color: PAL.g });
+    cur.y += 10;
   }
 }
 
@@ -203,7 +230,7 @@ function drawRifts(ctx, cur) {
 }
 
 function drawKit(ctx, cur) {
-  heading(ctx, cur, 'SATCHEL', G.tool ? `in hand: ${ITEMS[G.tool].name}` : 'nothing in hand');
+  heading(ctx, cur, 'SATCHEL', `${G.coin} coin`);
 
   const section = (label, kind, hint) => {
     text(ctx, label, PAGE_X + 8, cur.y, { size: 11, bold: true, color: PAL.g });
@@ -214,7 +241,7 @@ function drawKit(ctx, cur) {
       const rowY = cur.y - 3;
       const held = G.tool === item.id;
       if (held) { ctx.fillStyle = PAL.K; ctx.fillRect(PAGE_X + 2, rowY + 4, 4, 12); }
-      const count = kind === 'consumable' ? ` ×${G.items[item.id]}` : '';
+      const count = (kind === 'consumable' || kind === 'loot') ? ` ×${G.items[item.id]}` : '';
       text(ctx, `${item.name}${count}`, PAGE_X + 12, cur.y, { size: 12, bold: held });
       cur.y += LINE;
       para(ctx, cur, item.desc, { size: 10, color: PAL.g, indent: 20 });
@@ -223,11 +250,29 @@ function drawKit(ctx, cur) {
     }
   };
 
+  text(ctx, 'HANDS', PAGE_X + 8, cur.y, { size: 11, bold: true, color: PAL.g });
+  cur.y += LINE;
+  for (const w of ownedWeapons()) {
+    const rowY = cur.y - 3;
+    const held = G.weapon === w.id;
+    if (held) { ctx.fillStyle = PAL.K; ctx.fillRect(PAGE_X + 2, rowY + 4, 4, 12); }
+    const stats = `${w.atk >= 0 ? '+' : ''}${w.atk} dmg · ${w.hit >= 0 ? '+' : ''}${w.hit} aim · ${w.tag}`;
+    text(ctx, w.name, PAGE_X + 12, cur.y, { size: 12, bold: held });
+    text(ctx, stats, VIEW.width - 34, cur.y + 1, { size: 9, align: 'right', color: PAL.g });
+    cur.y += LINE;
+    para(ctx, cur, w.note, { size: 10, color: PAL.g, indent: 20 });
+    Notebook.rects.push({ kind: 'weapon', id: w.id, x: PAGE_X, y: rowY, w: PAGE_W - 30, h: cur.y - rowY });
+    cur.y += 8;
+  }
+  cur.y += 4;
+
   section('USE', 'consumable', 'The satchel is out of anything helpful.');
   cur.y += 4;
   section('CARRY', 'tool', 'No tools yet. Tap one to hold it.');
   cur.y += 4;
   section('EVIDENCE', 'key', 'Nothing solid enough to put in front of someone.');
+  cur.y += 4;
+  section('SPOILS', 'loot', 'Nothing worth selling.');
 }
 
 function drawLore(ctx, cur) {

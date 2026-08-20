@@ -1,5 +1,6 @@
 import { MAPS, prepareMap } from '../data/maps.js';
 import { ITEMS } from '../data/items.js';
+import { WEAPONS, weaponOf } from '../data/weapons.js';
 
 const SAVE_KEY = 'tata-prototype-v2';
 
@@ -27,6 +28,10 @@ export const G = {
   clues: [],
   items: { bandage: 3, tonic: 2 },
   tool: null,          // the one tool in hand; shifts stats
+  weapon: 'smg',       // what Attack swings or fires
+  weapons: { smg: true },
+  coin: 0,
+  quests: {},          // id -> { state: 'active'|'done', step }
   profiles: {},        // dossiers on people Tata has talked to or broken
   anomalies: [],       // rift events witnessed
   lore: [],            // fragments worth keeping
@@ -91,6 +96,33 @@ export function equipTool(id) {
   return G.tool;
 }
 
+// --- weapons -------------------------------------------------------------
+
+export const heldWeapon = () => weaponOf(G.weapon);
+
+export function ownWeapon(id) {
+  if (!WEAPONS[id]) return false;
+  G.weapons[id] = true;
+  return true;
+}
+
+export function equipWeapon(id) {
+  if (!G.weapons[id]) return false;
+  G.weapon = id;
+  return true;
+}
+
+export const ownedWeapons = () => Object.keys(G.weapons).filter((id) => WEAPONS[id]).map((id) => WEAPONS[id]);
+
+// --- coin ----------------------------------------------------------------
+
+export function addCoin(n) { G.coin = Math.max(0, G.coin + n); return G.coin; }
+export function spendCoin(n) {
+  if (G.coin < n) return false;
+  G.coin -= n;
+  return true;
+}
+
 /** A stat with the carried tool folded in — always use this, never tata.PER directly. */
 export function stat(key) {
   const base = G.tata[key] || 0;
@@ -99,6 +131,32 @@ export function stat(key) {
   const battle = G.battleBuff ? (G.battleBuff[key] || 0) : 0;
   return Math.max(0, base + bonus + battle);
 }
+
+// --- quests --------------------------------------------------------------
+
+export function startQuest(id) {
+  if (G.quests[id]) return false;
+  G.quests[id] = { state: 'active', step: 0 };
+  return true;
+}
+
+/** Moves a quest to a step, or finishes it when the step runs past the last one. */
+export function advanceQuest(id, step = null) {
+  const q = G.quests[id] || (G.quests[id] = { state: 'active', step: 0 });
+  q.step = step === null ? q.step + 1 : step;
+  return q;
+}
+
+export function finishQuest(id) {
+  const q = G.quests[id] || (G.quests[id] = { state: 'active', step: 0 });
+  q.state = 'done';
+  return q;
+}
+
+export const questState = (id) => (G.quests[id] ? G.quests[id].state : null);
+export const questStep = (id) => (G.quests[id] ? G.quests[id].step : -1);
+export const questActive = (id) => questState(id) === 'active';
+export const questDone = (id) => questState(id) === 'done';
 
 // --- dossiers, anomalies, lore ------------------------------------------
 
@@ -143,6 +201,7 @@ export function save() {
       mapId: G.mapId, x: G.player.x, y: G.player.y, facing: G.player.facing,
       tata: G.tata, flags: G.flags, clues: G.clues, items: G.items,
       tool: G.tool, profiles: G.profiles, anomalies: G.anomalies, lore: G.lore,
+      weapon: G.weapon, weapons: G.weapons, coin: G.coin, quests: G.quests,
     }));
   } catch { /* private mode: play on without saving */ }
 }
@@ -161,6 +220,10 @@ export function loadSave() {
     G.profiles = d.profiles || {};
     G.anomalies = d.anomalies || [];
     G.lore = d.lore || [];
+    G.weapon = d.weapon || 'smg';
+    G.weapons = d.weapons || { smg: true };
+    G.coin = d.coin || 0;
+    G.quests = d.quests || {};
     enterMap(d.mapId, d.x, d.y, d.facing);
     return true;
   } catch { return false; }

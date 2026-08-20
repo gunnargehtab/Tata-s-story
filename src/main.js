@@ -7,6 +7,7 @@ import { updateWorld, drawWorld, World } from './game/world.js';
 import { updateBattle, drawBattle, startBattle } from './game/battle.js';
 import { updateInterrogation, drawInterrogation, Interro } from './game/interrogation.js';
 import { Notebook } from './game/notebook.js';
+import { Shop, updateShop, drawShop } from './game/shop.js';
 import { Talk } from './game/talk.js';
 import { Cut } from './game/cutscene.js';
 import { showDialogue, Dialog } from './game/dialogue.js';
@@ -91,6 +92,10 @@ function startNewCase() {
   G.clues = [];
   G.items = { bandage: 3, tonic: 2 };
   G.tool = null;
+  G.weapon = 'smg';
+  G.weapons = { smg: true };
+  G.coin = 0;
+  G.quests = {};
   G.profiles = {};
   G.anomalies = [];
   G.lore = [];
@@ -117,6 +122,7 @@ function frame(now) {
   if (G.scene === 'title') { updateTitle(); drawTitle(); }
   else if (G.scene === 'battle') { updateBattle(dt); drawBattle(ctx); }
   else if (G.scene === 'interrogation') { updateInterrogation(dt); drawInterrogation(ctx); }
+  else if (G.scene === 'shop') { updateShop(dt); drawShop(ctx); }
   else { updateWorld(dt); drawWorld(ctx); }
 
   endFrame();
@@ -125,7 +131,7 @@ function frame(now) {
 
 // handy while prototyping: inspect live state from the console
 window.TATA = G;
-window.TATA_DEBUG = { Dialog, Cut, World, Notebook, Talk, Interro, warp: enterMap, fight: startBattle };
+window.TATA_DEBUG = { Dialog, Cut, World, Notebook, Talk, Interro, Shop, warp: enterMap, fight: startBattle };
 // TATA_GFX.set(false) drops back to the Phase 1/2 pixel renderer at any time
 window.TATA_GFX = { enabled: gfxEnabled, set: setGfxEnabled };
 

@@ -348,6 +348,60 @@ const LANTERN_KEEPER = [
   '................................',
 ];
 
+const CLOCK_RAT = [
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '.....KK.........KK......',
+  '....KKKK.......KKKK.....',
+  '....KKKKKKKKKKKKKKK.....',
+  '...KKKKKKKKKKKKKKKKK....',
+  '...KKGGKKKKKKKKGGKKKK...',
+  '...KKGYGKKKKKKGYGKKKKK..',
+  '...KKGGKKKKKKKKGGKKKKKK.',
+  '...KKKKKKKKKKKKKKKKKKKKK',
+  '....KKKKKKKKKKKKKKKKK...',
+  '....KK..KK...KK..KK.....',
+  '....KK..KK...KK..KK.....',
+  '...KKK..KKK.KKK..KKK....',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+];
+
+const RIFT_STAG = [
+  '..K..................K..',
+  '..K.K..............K.K..',
+  '..KKK..K........K..KKK..',
+  '...KK..K.K....K.K..KK...',
+  '....KKKKKK....KKKKKK....',
+  '.....KKKK......KKKK.....',
+  '......KKKKKKKKKKKK......',
+  '.......KKKKKKKKKK.......',
+  '.......KKBKKKKBKK.......',
+  '.......KKKKKKKKKK.......',
+  '........KKKKKKKK........',
+  '.........KKKKKK.........',
+  '.......KKKKKKKKKK.......',
+  '.....KKKKKKKKKKKKKK.....',
+  '....KKKKKKKKKKKKKKKK....',
+  '....KKKKKKKKKKKKKKKK....',
+  '....KKKKKKKKKKKKKKKK....',
+  '.....KKKKKKKKKKKKKK.....',
+  '.....KKK......KKKKK.....',
+  '.....KKK......KKKKK.....',
+  '.....KKK......KKKKK.....',
+  '.....KKK......KKKKK.....',
+  '....KKKK......KKKKKK....',
+  '........................',
+];
+
 const CAPSULE = [
   '................',
   '................',
@@ -402,5 +456,7 @@ export function buildSprites() {
     crate: trim(compile(CRATE_CRAWLER)),
     hound: trim(compile(RIFT_HOUND)),
     keeper: trim(compile(LANTERN_KEEPER)),
+    rat: trim(compile(CLOCK_RAT)),
+    stag: trim(compile(RIFT_STAG)),
   };
 }

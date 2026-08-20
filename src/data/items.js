@@ -4,6 +4,7 @@
  *   tool       — one may be carried in hand; it shifts Tata's stats
  *   key        — story objects. Key items double as EVIDENCE in interrogations,
  *                which is why they carry `evidence` text.
+ *   loot       — spoils worth something to somebody. Never evidence.
  */
 export const ITEMS = {
   bandage: {
@@ -41,6 +42,17 @@ export const ITEMS = {
     id: 'vest', name: 'Lined Vest', kind: 'tool',
     desc: 'Heavy. Quiet. Takes the edge off a rift.',
     bonus: { RES: 3, DEX: -1 },
+  },
+
+  coldCoin: {
+    id: 'coldCoin', name: 'Rift-Cold Coin', kind: 'loot',
+    desc: 'Struck from metal that was never warm. A fence in the market pays for these.',
+  },
+
+  register: {
+    id: 'register', name: 'School Register', kind: 'key',
+    desc: 'Nima’s register, water-stained. Two names crossed out, a third scratched away.',
+    evidence: 'The school register: two names crossed out, and a third scratched away entirely.',
   },
 
   capsule: {

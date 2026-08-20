@@ -1,7 +1,7 @@
 import { ENEMIES } from '../data/enemies.js';
 import { SKILLS, TONES } from '../data/skills.js';
 import { ITEMS } from '../data/items.js';
-import { G, addClue, grantXp, stat, carried, takeItem, noteProfile } from './state.js';
+import { G, addClue, grantXp, stat, carried, takeItem, noteProfile, addCoin, addItem, heldWeapon } from './state.js';
 import { SPRITES } from '../art/sprites.js';
 import { PAL } from '../art/palette.js';
 import { inkPanel, text, wrap, bar, drawControls, VIEW } from '../engine/ui.js';
@@ -39,7 +39,8 @@ export function startBattle(ids, opts = {}) {
     msgTimer: 0,
     navTimer: 0,
     result: null,
-    xp: 0,
+    xp: 0, coin: 0, coldCoin: 0,
+    empowered: boost > 1,
     fleeing: false,
     canRun: !opts.boss,
     onEnd: opts.onEnd || null,
@@ -81,6 +82,9 @@ function damageEnemy(b, e, amount, tag) {
     e.alive = false;
     fxHit(e.slot, 'down');
     b.xp += e.xp;
+    if (e.coin) b.coin += e.coin[0] + rand(e.coin[1] - e.coin[0] + 1);
+    if (b.empowered && Math.random() < 0.6) b.coldCoin++;
+    if (e.drop) { addItem(e.drop); say(b, `Left behind: ${ITEMS[e.drop].name}.`); }
     if (e.clue && addClue(e.clue.id, e.clue.text)) say(b, `Notebook: ${e.clue.text}`);
     say(b, `${e.name} comes apart into ordinary things.`);
   }
@@ -145,7 +149,8 @@ function interrogate(b, tone, e) {
     say(b, e.breaks);
     if (e.clue && addClue(e.clue.id, e.clue.text)) say(b, `Notebook: ${e.clue.text}`);
     noteProfile(e.id, { name: e.name, role: 'Broke off mid-fight rather than answer.', broken: true });
-    if (e.drop) { G.items[e.drop] = (G.items[e.drop] || 0) + 1; say(b, `Left behind: ${ITEMS[e.drop].name}.`); }
+    if (e.coin) b.coin += Math.round((e.coin[0] + e.coin[1]) / 4);
+    if (e.drop) { addItem(e.drop); say(b, `Left behind: ${ITEMS[e.drop].name}.`); }
   }
 }
 
@@ -252,6 +257,8 @@ function resolveAfter(b) {
     case 'win': {
       b.result = 'win';
       const levelled = grantXp(b.xp);
+      if (b.coin) { addCoin(b.coin); b.messages.push(`${b.coin} coin off the floor.`); }
+      if (b.coldCoin) { addItem('coldCoin', b.coldCoin); b.messages.push(`${b.coldCoin} rift-cold coin, still cold.`); }
       b.messages.push(`The way is clear. +${b.xp} XP.`);
       if (levelled) b.messages.push(`Tata reaches level ${G.tata.level}. She writes that down too.`);
       b.phase = 'msg';
@@ -516,6 +523,7 @@ function drawStatus(ctx) {
   bar(ctx, 110, 346, 100, 9, t.foc / t.maxFoc, PAL.B);
   text(ctx, `INT ${stat('INT')}  DEX ${stat('DEX')}`, 224, 330, { size: 10 });
   text(ctx, `PER ${stat('PER')}  RES ${stat('RES')}`, 224, 346, { size: 10 });
+  text(ctx, heldWeapon().name, VIEW.width - 26, 310, { size: 10, align: 'right', color: PAL.g });
   const bag = carried('consumable').map((i) => `${G.items[i.id]} ${i.name.toLowerCase()}`).join(' · ');
   text(ctx, bag || 'satchel empty', 20, 362, { size: 10, color: PAL.g });
 }
@@ -570,7 +578,7 @@ function overLine(b) {
 
 function hintFor(cmd) {
   return {
-    Attack: 'Compact SMG. Short, controlled.',
+    Attack: 'Whatever is in her hands right now.',
     Skill: 'Baton, flashbang, drone — spend focus.',
     Item: 'Bandages and cold tonic.',
     Interrogate: 'Break its morale. Take a clue instead of a corpse.',

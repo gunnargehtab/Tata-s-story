@@ -6,7 +6,7 @@
 export const ENEMIES = {
   wisp: {
     id: 'wisp', name: 'Lantern Wisp', sprite: 'wisp',
-    hp: 18, atk: 5, def: 1, DEX: 8, morale: 6, RES: 2,
+    hp: 18, atk: 5, def: 1, DEX: 8, morale: 6, RES: 2, coin: [3, 7],
     weakness: 'baton', xp: 9,
     clue: { id: 'wisp-light', text: 'Rift-lit wisps burn cold. They flinch from anything solid.' },
     barks: ['The lantern hums a word that isn’t a word.', 'It bobs closer, patient as a question.'],
@@ -14,7 +14,7 @@ export const ENEMIES = {
   },
   crate: {
     id: 'crate', name: 'Crate Crawler', sprite: 'crate',
-    hp: 26, atk: 6, def: 3, DEX: 4, morale: 9, RES: 3,
+    hp: 26, atk: 6, def: 3, DEX: 4, morale: 9, RES: 3, coin: [6, 12],
     weakness: 'flashbang', xp: 12, drop: 'manifest',
     clue: { id: 'crate-cargo', text: 'Smugglers’ crates. Someone has been moving cargo through the well.' },
     barks: ['The crate walks on splinters it grew tonight.', 'Something inside it shifts and settles.'],
@@ -22,15 +22,36 @@ export const ENEMIES = {
   },
   hound: {
     id: 'hound', name: 'Rift Hound', sprite: 'hound',
-    hp: 22, atk: 8, def: 2, DEX: 10, morale: 4, RES: 4,
+    hp: 22, atk: 8, def: 2, DEX: 10, morale: 4, RES: 4, coin: [5, 10],
     weakness: 'smg', xp: 14,
     clue: { id: 'hound-scent', text: 'The hounds track one scent only: the Traveler’s.' },
     barks: ['It has too many legs and all of them agree.', 'The hound circles, watching your hands, not your eyes.'],
     breaks: 'The hound whines, flattens, and slinks toward the deeper dark — the way it came.',
   },
+  rat: {
+    id: 'rat', name: 'Clockwork Rat', sprite: 'rat',
+    hp: 20, atk: 7, def: 2, DEX: 12, morale: 3, RES: 3, coin: [4, 9],
+    weakness: 'baton', xp: 13,
+    clue: { id: 'rat-works', text: 'The market rats have gearwork in them. Somebody is building with rift parts.' },
+    barks: ['Something ticks under the boards, and the ticking has teeth.', 'It runs on a schedule, and the schedule is you.'],
+    breaks: 'It stops mid-tick, spits out a bent cog, and rattles off under the dock.',
+  },
+  stag: {
+    id: 'stag', name: 'The Rift Stag', sprite: 'stag', boss: true,
+    hp: 74, atk: 10, def: 3, DEX: 9, morale: 10, RES: 7, coin: [40, 60],
+    weakness: 'smg', xp: 55,
+    clue: { id: 'stag-path', text: 'The stag walks the same line every night: shrine, village, well.' },
+    barks: [
+      'The stag steps out of a tree it was not standing behind.',
+      'Its antlers are wrong in a way that takes a moment to see: they are still growing.',
+      'It looks at Tata the way a road looks at a traveller.',
+    ],
+    breaks: 'It lowers its head, drops something out of its antlers, and walks back into the blue.',
+    drop: 'register',
+  },
   keeper: {
     id: 'keeper', name: 'The Lantern Keeper', sprite: 'keeper', boss: true,
-    hp: 66, atk: 8, def: 4, DEX: 6, morale: 14, RES: 8,
+    hp: 66, atk: 8, def: 4, DEX: 6, morale: 14, RES: 8, coin: [30, 40],
     weakness: 'drone', xp: 60,
     clue: { id: 'keeper-door', text: 'The Keeper was posted at the well to stop something coming UP.' },
     barks: [
