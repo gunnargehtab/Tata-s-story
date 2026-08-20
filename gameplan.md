@@ -202,7 +202,7 @@ Tata & Traveler sprites
 
 One dungeon
 
-Phase 2 — Core Systems (6–10 weeks)
+Phase 2 — Core Systems (6–10 weeks) — ✅ built, see docs/phase-2-systems.md
 
 Interrogation
 

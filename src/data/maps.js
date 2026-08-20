@@ -55,25 +55,25 @@ export const MAPS = {
       'TTTTTTTTTTTTTTTTTTTTTTTTTT',
     ],
     npcs: [
-      { id: 'sable', name: 'Sable, the Merchant', sprite: 'merchant', x: 10, y: 8, facing: 'down', wander: true,
+      { id: 'sable', name: 'Sable, the Merchant', sprite: 'merchant', x: 10, y: 8, facing: 'down', talk: 'sable', interro: 'sable',
         lines: {
           default: ['Half my lanterns went out at once last night.', 'Lanterns don’t agree on anything. Not unless something tells them to.'],
           post: ['That blue light took my whole stall’s shadow with it.', 'Whatever walked through here, it wasn’t walking to somewhere. It was walking away.'],
         },
         clue: { id: 'lanterns', text: 'Every lantern in the village dimmed at the same moment.' } },
-      { id: 'orrin', name: 'Orrin, the Archivist', sprite: 'archivist', x: 17, y: 12, facing: 'left',
+      { id: 'orrin', name: 'Orrin, the Archivist', sprite: 'archivist', x: 17, y: 12, facing: 'left', talk: 'orrin',
         lines: {
           default: ['Tapping under floorboards? Old pipes, child.', 'Though… three, two, one. That’s a countdown, not a plumbing fault.'],
           post: ['A shockwave with a direction is not weather. It’s a door opening.', 'The old well was sealed for a reason nobody wrote down. That worries me most.'],
         },
         clue: { id: 'countdown', text: 'Three taps, two taps, one tap — a countdown, not a code.' } },
-      { id: 'brann', name: 'Brann, the Watch', sprite: 'guard', x: 6, y: 16, facing: 'down',
+      { id: 'brann', name: 'Brann, the Watch', sprite: 'guard', x: 6, y: 16, facing: 'down', talk: 'brann',
         lines: {
           default: ['Nobody in, nobody out after dark. Go home, Tata.', 'And no, I did not see a tall man in a cloak. Stop asking.'],
           post: ['I saw him. I did. And I couldn’t make my legs move.', 'He went for the well. Nothing goes to the well.'],
         },
         clue: { id: 'traveler-path', text: 'The Watch froze when the Traveler passed. He went for the well.' } },
-      { id: 'nima', name: 'Nima, the Teacher', sprite: 'teacher', x: 19, y: 10, facing: 'left',
+      { id: 'nima', name: 'Nima, the Teacher', sprite: 'teacher', x: 19, y: 10, facing: 'left', talk: 'nima',
         lines: {
           default: ['Two children missed lessons this week. Nobody will say why.', 'Write it down, Tata. Things nobody says get lost.'],
           post: ['If the ground can shake like that, what else has been lying to us?'],
@@ -100,6 +100,7 @@ export const MAPS = {
   well1: {
     name: 'The Old Well — Descent',
     dark: true,
+    rifts: true,
     rows: [
       '##################',
       '#<--#-------#----#',
@@ -132,6 +133,7 @@ export const MAPS = {
   well2: {
     name: 'The Old Well — Keeper’s Chamber',
     dark: true,
+    rifts: true,
     rows: [
       '###############',
       '#####-----#####',

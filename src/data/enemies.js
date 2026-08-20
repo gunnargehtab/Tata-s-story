@@ -15,7 +15,7 @@ export const ENEMIES = {
   crate: {
     id: 'crate', name: 'Crate Crawler', sprite: 'crate',
     hp: 26, atk: 6, def: 3, DEX: 4, morale: 9, RES: 3,
-    weakness: 'flashbang', xp: 12,
+    weakness: 'flashbang', xp: 12, drop: 'manifest',
     clue: { id: 'crate-cargo', text: 'Smugglers’ crates. Someone has been moving cargo through the well.' },
     barks: ['The crate walks on splinters it grew tonight.', 'Something inside it shifts and settles.'],
     breaks: 'The lid flaps open. It spills a manifest stamped with no port name and scuttles off.',

@@ -14,11 +14,6 @@ export const SKILLS = [
     flavor: 'The little drone lifts off Tata’s shoulder and starts reading the room.' },
 ];
 
-export const ITEMS = {
-  bandage: { id: 'bandage', name: 'Bandage', heal: 14, text: 'Patched up. Mostly.' },
-  tonic: { id: 'tonic', name: 'Cold Tonic', foc: 7, text: 'The buzzing in her ears settles.' },
-};
-
 /* Interrogation tones (gameplan §7). Phase 1 uses them as combat modifiers;
    Phase 2 grows them into the branching dialogue system. */
 export const TONES = [

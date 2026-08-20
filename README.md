@@ -52,8 +52,9 @@ And because the world just changed — and she intends to find out why.
 ---
 ## ▶ Play the prototype
 
-Phase 1 of the roadmap in [`gameplan.md`](gameplan.md) is playable — movement,
-turn-based combat, the village, Tata & the Traveler, and the Old Well dungeon.
+Phases 1 and 2 of the roadmap in [`gameplan.md`](gameplan.md) are playable —
+movement, turn-based combat, the village and the Old Well, plus interrogations,
+the detective notebook, the satchel, rift events and branching dialogue.
 No dependencies, no build step:
 
 ```sh
@@ -62,7 +63,8 @@ python3 -m http.server 8000
 
 …then open `http://localhost:8000` (best on a phone, or a narrow browser window).
 Details, controls and the code map are in
-[`docs/phase-1-prototype.md`](docs/phase-1-prototype.md).
+[`docs/phase-1-prototype.md`](docs/phase-1-prototype.md); the Phase 2 systems are
+written up in [`docs/phase-2-systems.md`](docs/phase-2-systems.md).
 
 ---
 # future thoughts:

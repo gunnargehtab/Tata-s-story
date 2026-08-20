@@ -1,19 +1,23 @@
-import { G, enterMap, save } from './state.js';
+import { G, enterMap, save, noteProfile } from './state.js';
 import { tileArt, TILE, isWalkable } from '../art/tiles.js';
 import { SPRITES } from '../art/sprites.js';
 import { PAL } from '../art/palette.js';
-import { VIEW, WORLD_SCALE, inkPanel, text, wrap, bar, drawControls } from '../engine/ui.js';
+import { VIEW, WORLD_SCALE, inkPanel, text, bar, drawControls } from '../engine/ui.js';
 import { Input } from '../engine/input.js';
 import { Dialog, showDialogue, updateDialogue, drawDialogue } from './dialogue.js';
 import { Cut, updateCutscene } from './cutscene.js';
 import { SCRIPTS } from './scripts.js';
 import { startBattle } from './battle.js';
+import { Notebook, openNotebook, updateNotebook, drawNotebook } from './notebook.js';
+import { startTalk, talkActive } from './talk.js';
+import { startInterrogation } from './interrogation.js';
+import { maybeOpenRift, updateRift, riftStep, drawRift, drawRiftHud } from './rift.js';
 
 const TS = TILE * WORLD_SCALE;      // 32 screen px per tile
 const STEP_TIME = 0.16;             // seconds per tile
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
-export const World = { notebook: false, camX: 0, camY: 0, encounterCooldown: 0 };
+export const World = { camX: 0, camY: 0, encounterCooldown: 0 };
 
 // ------------------------------------------------------------------ helpers
 
@@ -80,13 +84,10 @@ export function updateWorld(dt) {
   updateDialogue(dt);
   World.encounterCooldown = Math.max(0, World.encounterCooldown - dt);
 
-  if (Input.menuPressed && !Dialog.active && !Cut.running) World.notebook = !World.notebook;
-  if (World.notebook) {
-    if (Input.actionPressed) World.notebook = false;
-    for (const tap of Input.taps) if (tap.y < 90 || tap.y > 560) World.notebook = false;
-    return;
-  }
-  if (Dialog.active || Cut.running) { animateNpcs(dt); return; }
+  if (Notebook.open) { updateNotebook(dt); animateNpcs(dt); return; }
+  if (Input.menuPressed && !Dialog.active && !Cut.running) { openNotebook(); return; }
+  updateRift(dt);
+  if (Dialog.active || Cut.running || talkActive()) { animateNpcs(dt); return; }
 
   const p = G.player;
 
@@ -199,6 +200,8 @@ function onArrive() {
     }
   }
 
+  if (riftStep(blocked)) return;      // a rift spawn caught her, or she sealed it
+  if (maybeOpenRift(isWalkable, tileAt)) return;
   maybeEncounter();
 }
 
@@ -232,17 +235,18 @@ function interact() {
   const npc = npcAt(tx, ty);
   if (npc) {
     npc.dir = { up: 'down', down: 'up', left: 'right', right: 'left' }[p.facing];
-    const set = (G.flags.wellOpen && npc.lines.post) ? npc.lines.post : npc.lines.default;
-    const lines = set.map((l) => ({ who: npc.name, text: l }));
-    if (npc.clue && G.flags.capsule) {
-      const gained = !G.clues.some((c) => c.id === npc.clue.id);
-      if (gained) {
-        G.clues.push({ id: npc.clue.id, text: npc.clue.text });
-        lines.push({ who: 'Notebook', text: npc.clue.text });
-        save();
-      }
+
+    // a subject who has been rattled enough gets questioned properly
+    if (npc.interro && G.flags[`${npc.interro}Interro`] && !G.flags[`${npc.interro}Broken`]) {
+      delete G.flags[`${npc.interro}Interro`];
+      startInterrogation(npc.interro, { onEnd: () => save() });
+      return;
     }
-    showDialogue(lines);
+    if (npc.talk && startTalk(npc.talk, 'start', () => save())) return;
+
+    const set = (G.flags.wellOpen && npc.lines.post) ? npc.lines.post : npc.lines.default;
+    showDialogue(set.map((l) => ({ who: npc.name, text: l })));
+    if (npc.name) noteProfile(npc.id, { name: npc.name });
     return;
   }
 
@@ -310,8 +314,10 @@ export function drawWorld(ctx) {
   bodies.push({ y: p.py, draw: () => drawPlayer(ctx, p, camX, camY) });
   bodies.sort((a, b) => a.y - b.y).forEach((b) => b.draw());
 
+  drawRift(ctx, camX, camY);
   if (m.dark) drawLantern(ctx, p, camX, camY);
   drawHud(ctx);
+  drawRiftHud(ctx);
   if (Cut.flash > 0) {
     ctx.globalAlpha = Math.min(0.85, Cut.flash);
     ctx.fillStyle = PAL.B;
@@ -319,7 +325,7 @@ export function drawWorld(ctx) {
     ctx.globalAlpha = 1;
   }
   drawDialogue(ctx);
-  if (World.notebook) drawNotebook(ctx);
+  if (Notebook.open) drawNotebook(ctx);
   else if (!Dialog.active) drawControls(ctx, { pad: true, actionLabel: 'LOOK', menu: true, menuLabel: 'NOTE' });
 }
 
@@ -388,27 +394,3 @@ function drawHud(ctx) {
   text(ctx, `Lv${G.tata.level}`, VIEW.width - 26, 18, { size: 11, align: 'right', bold: true });
 }
 
-/** Phase 1 stub of the Detective Notebook (full system is Phase 2). */
-function drawNotebook(ctx) {
-  ctx.globalAlpha = 0.6;
-  ctx.fillStyle = PAL.K;
-  ctx.fillRect(0, 0, VIEW.width, VIEW.height);
-  ctx.globalAlpha = 1;
-  inkPanel(ctx, 16, 70, VIEW.width - 32, 500);
-  text(ctx, 'DETECTIVE NOTEBOOK', 34, 90, { size: 14, bold: true });
-  text(ctx, `Clues: ${G.clues.length}   Steps: ${G.steps}`, 34, 112, { size: 10, color: PAL.g });
-  let y = 138;
-  if (!G.clues.length) {
-    text(ctx, 'Nothing written down yet.', 34, y, { size: 12, color: PAL.g });
-  }
-  for (const clue of G.clues) {
-    const lines = wrap(ctx, `— ${clue.text}`, VIEW.width - 80, 12);
-    for (const line of lines) {
-      if (y > 500) break;
-      text(ctx, line, 34, y, { size: 12 });
-      y += 17;
-    }
-    y += 8;
-  }
-  text(ctx, 'tap outside, or NOTE, to close', VIEW.width / 2, 540, { size: 10, align: 'center', color: PAL.g });
-}
