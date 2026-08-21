@@ -1,6 +1,7 @@
 import { MAPS, prepareMap } from '../data/maps.js';
 import { ITEMS } from '../data/items.js';
 import { WEAPONS, weaponOf } from '../data/weapons.js';
+import { sfx } from '../engine/audio.js';
 
 const SAVE_KEY = 'tata-prototype-v2';
 
@@ -62,6 +63,7 @@ export function enterMap(id, x, y, facing = 'down') {
 export function addClue(id, text) {
   if (G.clues.some((c) => c.id === id)) return false;
   G.clues.push({ id, text });
+  sfx('clue');
   return true;
 }
 
@@ -178,7 +180,7 @@ export function noteLore(text) {
   if (!G.lore.includes(text)) G.lore.push(text);
 }
 
-const XP_TABLE = [0, 24, 60, 120, 210, 340];
+const XP_TABLE = [0, 24, 60, 120, 210, 340, 520, 760];
 
 export function grantXp(amount) {
   const t = G.tata;

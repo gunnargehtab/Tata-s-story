@@ -6,6 +6,7 @@ import { SPRITES } from '../art/sprites.js';
 import { PAL } from '../art/palette.js';
 import { VIEW, inkPanel, text, wrap, bar, drawControls } from '../engine/ui.js';
 import { Input } from '../engine/input.js';
+import { sfx } from '../engine/audio.js';
 
 /*
  * Interrogation mode. Not a fight with different words: composure is broken by
@@ -67,6 +68,7 @@ function stateNext(force = false) {
 
 function press(tone) {
   const s = Interro.subject;
+  sfx('question');
   const roll = Math.round(stat('INT') * tone.power) + rand(5) - (s.resist + tone.res);
   say(`Tata, ${tone.name.toLowerCase()}: "${questionFor(tone)}"`);
   say(s.replies[tone.id][rand(s.replies[tone.id].length)]);
@@ -100,6 +102,7 @@ function present(evidence) {
 
   const target = s.statements.find((st) => st.stated && !st.broken && st.contradicts === evidence.id);
   if (target) {
+    sfx('evidence');
     const hit = Math.round(s.maxComposure * 0.4) + rand(4);
     s.composure = Math.max(0, s.composure - hit);
     target.broken = true;
@@ -123,6 +126,7 @@ function present(evidence) {
     return;
   }
 
+  sfx('denied');
   s.trust = clamp(s.trust - 1, 0, MAX_TRUST);
   s.composure = Math.min(s.maxComposure, s.composure + 2);
   say('It means nothing to them, and they enjoy that it means nothing.');
@@ -136,6 +140,7 @@ function observe() {
   const lie = s.statements.find((st) => st.stated && st.contradicts && !st.marked && !st.broken);
   if (lie) {
     lie.marked = true;
+    sfx('clue');
     say(`That one is a lie. "${lie.text}" — find the thing that proves it.`);
     noteProfile(s.id, { pressure: lie.text });
   }
@@ -170,6 +175,7 @@ function resolveAfter() {
   switch (Interro.after) {
     case 'break': {
       Interro.result = 'break';
+      sfx('breakMorale');
       for (const line of s.breakLines) say(line);
       const fx = s.onBreak || {};
       if (fx.clue && addClue(fx.clue.id, fx.clue.text)) say(`Notebook: ${fx.clue.text}`);

@@ -183,7 +183,7 @@ Reworked toward Final Fantasy VII (1997): pre-rendered backgrounds, low-poly cha
 - Full 3D battle scenes
 - Ink/toon shader stack
 
-### Phase 4 — Polish (4–6 weeks)
+### Phase 4 — Polish (4–6 weeks) — ✅ built, see [docs/phase-4-polish.md](docs/phase-4-polish.md)
 
 - Animations
 - Sound
