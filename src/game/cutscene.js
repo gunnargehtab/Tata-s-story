@@ -2,6 +2,7 @@ import { G, enterMap, save } from './state.js';
 import { showDialogue, Dialog } from './dialogue.js';
 import { startBattle } from './battle.js';
 import { startInterrogation } from './interrogation.js';
+import { sfx } from '../engine/audio.js';
 
 /*
  * Tiny step-runner for scripted beats. A script is an array of steps:
@@ -39,7 +40,7 @@ function step() {
 
   if (s.say) { Cut.blocking = true; showDialogue(s.say, () => { Cut.blocking = false; step(); }); return; }
   if (s.wait) { Cut.blocking = true; Cut.timer = s.wait; return; }
-  if (s.flash) { Cut.flash = 1; return step(); }
+  if (s.flash) { Cut.flash = 1; sfx('shock'); return step(); }
   if (s.spawn) {
     G.actors.push({ frame: 0, dir: 'down', ...s.spawn, px: s.spawn.x, py: s.spawn.y, path: [], t: 0 });
     return step();

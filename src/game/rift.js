@@ -5,6 +5,7 @@ import { SPRITES } from '../art/sprites.js';
 import { PAL } from '../art/palette.js';
 import { TILE } from '../art/tiles.js';
 import { VIEW, inkPanel, text, bar } from '../engine/ui.js';
+import { sfx } from '../engine/audio.js';
 
 /*
  * Rift events (gameplan §7): random distortions, a clock, and monsters that
@@ -47,6 +48,7 @@ export function maybeOpenRift(isWalkable, tileAt) {
     spawnTimer: 6,
     pulse: 0,
   };
+  sfx('riftOpen');
   const first = !G.flags.riftTutorialDone;
   G.flags.riftTutorialDone = true;
   noteAnomaly(`A rift opened in ${G.map.name} without anything opening it.`);
@@ -115,6 +117,7 @@ function seal() {
   const roll = stat('RES') + Math.floor(Math.random() * 8);
   G.rift = null;
   if (roll >= 8) {
+    sfx('riftSeal');
     noteAnomaly('Sealed a rift by standing in it. It closed like a held breath let go.');
     addItem('ward');
     const up = grantXp(14);
@@ -125,6 +128,7 @@ function seal() {
       ...(up ? [{ who: 'Notebook', text: `Level ${G.tata.level}.` }] : []),
     ]);
   } else {
+    sfx('hurt');
     G.tata.hp = Math.max(1, G.tata.hp - 6);
     noteAnomaly('A rift threw her out. Sealing one takes more resistance than she has.');
     showDialogue([
@@ -136,6 +140,7 @@ function seal() {
 }
 
 function collapse() {
+  sfx('riftCollapse');
   const r = G.rift;
   G.rift = null;
   noteAnomaly('An unsealed rift collapsed. Whatever it was holding came out all at once.');

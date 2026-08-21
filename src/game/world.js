@@ -13,6 +13,8 @@ import { startTalk, talkActive } from './talk.js';
 import { startInterrogation } from './interrogation.js';
 import { maybeOpenRift, updateRift, riftStep, drawRift, drawRiftHud } from './rift.js';
 import { gfxEnabled, drawWorld3D, fieldProject, fieldUnproject, fieldPPU } from '../gfx/index.js';
+import { sfx } from '../engine/audio.js';
+import { startTransition, transitionActive, drawLowHp } from '../engine/fx.js';
 
 const TS = TILE * WORLD_SCALE;      // 32 screen px per tile
 const STEP_TIME = 0.16;             // seconds per tile
@@ -81,6 +83,7 @@ function findPath(sx, sy, tx, ty) {
 
 export function updateWorld(dt) {
   G.time += dt;
+  if (transitionActive()) { animateNpcs(dt); return; }   // the ink is still crossing the page
   updateCutscene(dt);
   updateDialogue(dt);
   World.encounterCooldown = Math.max(0, World.encounterCooldown - dt);
@@ -179,12 +182,14 @@ function tryStep(dir) {
 function onArrive() {
   const p = G.player;
   G.steps++;
+  sfx('step');
 
   // warps
   const warp = (G.map.warps || []).find((w) => w.x === p.x && w.y === p.y);
   if (warp && warp.to) {
-    enterMap(warp.to, warp.tx, warp.ty, warp.facing);
-    save();
+    sfx('door');
+    p.path.length = 0;
+    startTransition('wipe', () => { enterMap(warp.to, warp.tx, warp.ty, warp.facing); save(); });
     return;
   }
 
@@ -257,7 +262,11 @@ function interact() {
   if (locked) { showDialogue([locked.locked]); return; }
 
   const warp = (G.map.warps || []).find((w) => w.x === tx && w.y === ty && w.to);
-  if (warp) { enterMap(warp.to, warp.tx, warp.ty, warp.facing); save(); return; }
+  if (warp) {
+    sfx('door');
+    startTransition('wipe', () => { enterMap(warp.to, warp.tx, warp.ty, warp.facing); save(); });
+    return;
+  }
 
   // ambient "detective mode" reading of the tile in front
   const ch = tileAt(tx, ty);
@@ -437,6 +446,7 @@ function drawLantern(ctx, p) {
 }
 
 function drawHud(ctx) {
+  drawLowHp(ctx, G.tata.hp / G.tata.maxHp, G.time);
   inkPanel(ctx, 8, 8, VIEW.width - 16, 52);
   text(ctx, G.map.name, 22, 18, { size: 12, bold: true });
   text(ctx, `HP ${G.tata.hp}/${G.tata.maxHp}`, 22, 38, { size: 10 });
@@ -444,5 +454,6 @@ function drawHud(ctx) {
   text(ctx, `FOC ${G.tata.foc}/${G.tata.maxFoc}`, 176, 38, { size: 10 });
   bar(ctx, 252, 38, 70, 8, G.tata.foc / G.tata.maxFoc, PAL.B);
   text(ctx, `Lv${G.tata.level}`, VIEW.width - 26, 18, { size: 11, align: 'right', bold: true });
+  text(ctx, `${G.coin}c`, VIEW.width - 26, 38, { size: 10, align: 'right', color: PAL.g });
 }
 

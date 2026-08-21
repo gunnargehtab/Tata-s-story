@@ -4,6 +4,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { PAL } from '../art/palette.js';
 import { VIEW, inkPanel, text, wrap, drawControls } from '../engine/ui.js';
 import { Input } from '../engine/input.js';
+import { sfx } from '../engine/audio.js';
 
 /*
  * The quay stall. Buy consumables and weapons, sell what the well coughed up.
@@ -55,11 +56,13 @@ function listing() {
 function choose(entry) {
   if (!entry) return;
   if (entry.kind === 'sell') {
-    if (!takeItem(entry.id)) return toast('None left to sell.');
+    if (!takeItem(entry.id)) { sfx('denied'); return toast('None left to sell.'); }
     addCoin(entry.price);
+    sfx('coin');
     return toast(`Sold ${entry.name} for ${entry.price}.`);
   }
-  if (!spendCoin(entry.price)) return toast('Not enough coin. He has heard every version of "later".');
+  if (!spendCoin(entry.price)) { sfx('denied'); return toast('Not enough coin. He has heard every version of "later".'); }
+  sfx('buy');
   if (entry.kind === 'weapon') {
     ownWeapon(entry.id);
     equipWeapon(entry.id);

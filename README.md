@@ -52,11 +52,12 @@ And because the world just changed — and she intends to find out why.
 ---
 ## ▶ Play the prototype
 
-Phases 1–3 of the roadmap in [`gameplan.md`](gameplan.md) are playable — Acts I
+Phases 1–4 of the roadmap in [`gameplan.md`](gameplan.md) are playable — Acts I
 and II end to end: the village, the Old Well, the Rift Forest, Market City and
 the Archives, with turn-based combat, interrogations, the detective notebook,
-weapons, a shop, side quests, rift events and branching dialogue.
-No dependencies, no build step:
+weapons, a shop, side quests, rift events and branching dialogue — now with
+procedural sound and music, ink transitions, and offline play (it installs to a
+home screen). No dependencies, no build step:
 
 ```sh
 python3 -m http.server 8000
@@ -65,8 +66,10 @@ python3 -m http.server 8000
 …then open `http://localhost:8000` (best on a phone, or a narrow browser window).
 Details, controls and the code map are in
 [`docs/phase-1-prototype.md`](docs/phase-1-prototype.md); the Phase 2 systems are
-written up in [`docs/phase-2-systems.md`](docs/phase-2-systems.md) and the Phase 3
-regions, weapons and quests in [`docs/phase-3-content.md`](docs/phase-3-content.md).
+written up in [`docs/phase-2-systems.md`](docs/phase-2-systems.md), the Phase 3
+regions, weapons and quests in [`docs/phase-3-content.md`](docs/phase-3-content.md),
+and the Phase 4 polish pass — sound, transitions, balancing, offline — in
+[`docs/phase-4-polish.md`](docs/phase-4-polish.md).
 
 ### The look
 

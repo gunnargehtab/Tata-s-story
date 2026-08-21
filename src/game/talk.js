@@ -7,6 +7,7 @@ import { QUESTS } from '../data/quests.js';
 import { WEAPONS } from '../data/weapons.js';
 import { showDialogue, showChoices } from './dialogue.js';
 import { TALKS } from '../data/talks.js';
+import { sfx } from '../engine/audio.js';
 
 /*
  * Branching dialogue (gameplan §7). A talk is a map of nodes:
@@ -103,7 +104,7 @@ function payReward(id) {
   const out = [];
   if (!q || !q.reward) return out;
   const r = q.reward;
-  if (r.coin) { addCoin(r.coin); out.push(`+${r.coin} coin.`); }
+  if (r.coin) { addCoin(r.coin); sfx('coin'); out.push(`+${r.coin} coin.`); }
   if (r.item) { addItem(r.item); out.push(`Satchel: ${r.item}.`); }
   if (r.weapon) { ownWeapon(r.weapon); out.push(`New weapon: ${WEAPONS[r.weapon].name}.`); }
   if (r.clue && addClue(r.clue.id, r.clue.text)) out.push(r.clue.text);

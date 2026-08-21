@@ -7,6 +7,8 @@ import { PAL } from '../art/palette.js';
 import { inkPanel, text, wrap, bar, drawControls, VIEW } from '../engine/ui.js';
 import { Input } from '../engine/input.js';
 import { gfxEnabled, drawBattleScene, fxAct, fxHit, fxImpact, resetBattleFx } from '../gfx/index.js';
+import { sfx } from '../engine/audio.js';
+import { startTransition, drawLowHp } from '../engine/fx.js';
 
 const rand = (n) => Math.floor(Math.random() * n);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -48,12 +50,20 @@ export function startBattle(ids, opts = {}) {
     shakeScreen: 0,
     tataHurt: 0,
     dt: 0,
+    pops: [],        // floating damage numbers {slot, txt, color, t}
+    anchors: {},     // slot -> screen point, refreshed as the enemies draw
   };
   resetBattleFx();
   const b = G.battle;
   say(b, opts.intro || `${enemies.length > 1 ? 'Something moves' : enemies[0].name + ' blocks the way'}.`);
   for (const e of enemies) if (e.barks) say(b, e.barks[rand(e.barks.length)]);
-  G.scene = 'battle';
+  sfx(opts.boss ? 'shock' : 'encounter');
+  // the iris closes on the field and opens on the fight
+  startTransition('iris', () => { G.scene = 'battle'; }, 0.55);
+}
+
+function pushPop(b, slot, txt, color) {
+  b.pops.push({ slot, txt, color, t: 0 });
 }
 
 function say(b, line) { b.messages.push(line); }
@@ -77,10 +87,13 @@ function damageEnemy(b, e, amount, tag) {
   b.shakeScreen = 0.18;
   fxHit(e.slot, 'hit');
   fxImpact(e.slot, b.enemies.length, note ? PAL.B : PAL.R);
+  sfx('hit');
+  pushPop(b, e.slot, `-${dmg}`, note ? PAL.B : PAL.K);
   say(b, `${e.name} takes ${dmg}.${note}`);
   if (e.curHp === 0) {
     e.alive = false;
     fxHit(e.slot, 'down');
+    sfx('down');
     b.xp += e.xp;
     if (e.coin) b.coin += e.coin[0] + rand(e.coin[1] - e.coin[0] + 1);
     if (b.empowered && Math.random() < 0.6) b.coldCoin++;
@@ -92,14 +105,17 @@ function damageEnemy(b, e, amount, tag) {
 
 function playerAttack(b, e) {
   const t = G.tata;
+  const w = heldWeapon();     // damage, accuracy and the weakness tag all come from her hands
   fxAct('attack', e.slot);
+  sfx(w.tag === 'baton' ? 'baton' : w.tag === 'flashbang' ? 'flashbang' : 'smg');
   const dex = stat('DEX');
-  const hitChance = clamp(0.72 + (dex - e.DEX) * 0.04, 0.35, 0.95);
-  if (Math.random() > hitChance) { say(b, 'The burst goes wide.'); return; }
+  const hitChance = clamp(0.72 + (dex - e.DEX) * 0.04 + (w.hit || 0) / 100, 0.35, 0.95);
+  if (Math.random() > hitChance) { sfx('miss'); say(b, 'The shot goes wide.'); return; }
   const crit = Math.random() < clamp(dex * 0.012, 0.02, 0.2);
-  let dmg = t.atk + rand(4) + (crit ? Math.round(t.atk * 0.8) : 0);
+  let dmg = t.atk + (w.atk || 0) + rand(4) + (crit ? Math.round(t.atk * 0.8) : 0);
   if (crit) say(b, 'Clean line of sight —');
-  damageEnemy(b, e, dmg, 'smg');
+  damageEnemy(b, e, dmg, w.tag);
+  if (w.blind && e.alive && Math.random() < w.blind) { e.stun += 1; say(b, `${e.name} is blinded by the flare.`); }
 }
 
 function useSkill(b, skill, e) {
@@ -107,6 +123,7 @@ function useSkill(b, skill, e) {
   if (t.foc < skill.cost) { say(b, 'Not enough focus.'); return false; }
   t.foc -= skill.cost;
   fxAct('cast', e.slot);
+  sfx({ burst: 'smg', baton: 'baton', flashbang: 'flashbang', drone: 'drone' }[skill.id] || 'smg');
   say(b, skill.flavor);
   if (skill.reveal) {
     e.revealed = true;
@@ -130,6 +147,7 @@ function labelForTag(tag) {
 
 function interrogate(b, tone, e) {
   fxAct('interrogate', e.slot);
+  sfx('question');
   const roll = Math.round(stat('INT') * tone.power) + rand(5) - (e.RES + tone.res);
   say(b, `Tata, ${tone.name.toLowerCase()}: "${questionFor(e, tone)}"`);
   if (roll <= 0) {
@@ -138,6 +156,7 @@ function interrogate(b, tone, e) {
     return;
   }
   e.curMorale = Math.max(0, e.curMorale - roll);
+  pushPop(b, e.slot, `-${roll} MOR`, PAL.b);
   say(b, `${e.name} falters. (-${roll} morale)`);
   if (!e.revealed && roll >= 6) {
     e.revealed = true;
@@ -145,6 +164,7 @@ function interrogate(b, tone, e) {
   }
   if (e.curMorale === 0) {
     e.alive = false;
+    sfx('breakMorale');
     b.xp += Math.round(e.xp * 0.6);
     say(b, e.breaks);
     if (e.clue && addClue(e.clue.id, e.clue.text)) say(b, `Notebook: ${e.clue.text}`);
@@ -167,6 +187,7 @@ function questionFor(e, tone) {
 function useItem(b, key) {
   const item = ITEMS[key];
   if (!item || !takeItem(key)) { say(b, 'Nothing like that in the satchel.'); return false; }
+  sfx('heal');
   if (item.heal) G.tata.hp = Math.min(G.tata.maxHp, G.tata.hp + item.heal);
   if (item.foc) G.tata.foc = Math.min(G.tata.maxFoc, G.tata.foc + item.foc);
   if (item.battleBuff) {
@@ -181,6 +202,7 @@ function tryRun(b) {
   const avgDex = living(b).reduce((s, e) => s + e.DEX, 0) / Math.max(1, living(b).length);
   if (Math.random() < clamp(0.45 + (G.tata.DEX - avgDex) * 0.05, 0.15, 0.9)) {
     say(b, 'Tata backs off into the dark. Questions keep.');
+    sfx('flee');
     b.fleeing = true;
     return true;
   }
@@ -200,6 +222,8 @@ function enemyTurn(b) {
     t.hp = Math.max(0, t.hp - dmg);
     b.shakeScreen = 0.22;
     b.tataHurt = 0.35;
+    sfx('hurt');
+    pushPop(b, -1, `-${dmg}`, PAL.R);
     say(b, `${e.name} hits Tata for ${dmg}.`);
     if (t.hp === 0) { say(b, 'Tata goes down on one knee. The notebook lands open.'); return; }
   }
@@ -227,6 +251,8 @@ export function updateBattle(dt) {
   b.shakeScreen = Math.max(0, b.shakeScreen - dt);
   b.tataHurt = Math.max(0, b.tataHurt - dt);
   for (const e of b.enemies) { e.shake = Math.max(0, e.shake - dt); e.flash = Math.max(0, e.flash - dt); }
+  for (const p of b.pops) p.t += dt / 0.9;
+  if (b.pops.length && b.pops[0].t >= 1) b.pops = b.pops.filter((p) => p.t < 1);
 
   if (b.phase === 'msg') {
     b.msgTimer += dt;
@@ -257,6 +283,7 @@ function resolveAfter(b) {
     case 'win': {
       b.result = 'win';
       const levelled = grantXp(b.xp);
+      sfx(levelled ? 'levelup' : 'win');
       if (b.coin) { addCoin(b.coin); b.messages.push(`${b.coin} coin off the floor.`); }
       if (b.coldCoin) { addItem('coldCoin', b.coldCoin); b.messages.push(`${b.coldCoin} rift-cold coin, still cold.`); }
       b.messages.push(`The way is clear. +${b.xp} XP.`);
@@ -271,6 +298,7 @@ function resolveAfter(b) {
       break;
     case 'lose':
       b.result = 'lose';
+      sfx('lose');
       b.phase = 'over';
       break;
     case 'done':
@@ -287,12 +315,16 @@ function resolveAfter(b) {
 }
 
 function finish(b) {
-  G.battleBuff = null;
-  const cb = b.onEnd;
-  const result = b.result;
-  G.battle = null;
-  G.scene = 'world';
-  if (cb) cb(result);
+  if (b.finishing) return;        // one iris per battle, however fast the taps come
+  b.finishing = true;
+  startTransition('iris', () => {
+    G.battleBuff = null;
+    const cb = b.onEnd;
+    const result = b.result;
+    G.battle = null;
+    G.scene = 'world';
+    if (cb) cb(result);
+  }, 0.55);
 }
 
 function commitAction(b, run) {
@@ -329,11 +361,11 @@ function updateMenus(b, dt) {
 
   // command / submenus ----------------------------------------------------
   const list = currentList(b);
-  if (picked && picked.kind === 'menu') { b.cursor = picked.index; b.subCursor = picked.index; select(b); return; }
-  if (dir === 'down') moveIndex(b, 1, list.length);
-  if (dir === 'up') moveIndex(b, -1, list.length);
-  if (Input.menuPressed && b.submenu) { b.submenu = null; b.phase = 'menu'; }
-  if (Input.actionPressed) select(b);
+  if (picked && picked.kind === 'menu') { b.cursor = picked.index; b.subCursor = picked.index; sfx('tap'); select(b); return; }
+  if (dir === 'down') { moveIndex(b, 1, list.length); sfx('blip'); }
+  if (dir === 'up') { moveIndex(b, -1, list.length); sfx('blip'); }
+  if (Input.menuPressed && b.submenu) { b.submenu = null; b.phase = 'menu'; sfx('back'); }
+  if (Input.actionPressed) { sfx('tap'); select(b); }
 }
 
 function prevAlive(b, step) {
@@ -415,6 +447,7 @@ export function drawBattle(ctx) {
   ctx.save();
   ctx.translate(shake, 0);
   b.hitRects = [];
+  b.anchors = {};
 
   const rects = gfxEnabled()
     ? drawBattleScene(ctx, b, b.dt || 0, { dark: !!G.map?.dark, down: G.tata.hp === 0, hurt: b.tataHurt })
@@ -423,6 +456,8 @@ export function drawBattle(ctx) {
   else { drawField(ctx, b); drawEnemies(ctx, b); }
   drawStatus(ctx);
   drawPanel(ctx, b);
+  drawPops(ctx, b);
+  drawLowHp(ctx, G.tata.hp / G.tata.maxHp, performance.now() / 1000);
 
   ctx.restore();
   const confirming = b.phase === 'msg' || b.phase === 'over';
@@ -470,6 +505,7 @@ function drawEnemies3D(ctx, b, rects) {
     bar(ctx, bx, 281, bw, 5, e.curMorale / e.maxMorale, PAL.B);
     if (e.revealed) text(ctx, `weak: ${labelForTag(e.weakness)}`, cx, 289, { size: 9, align: 'center', color: PAL.b });
     b.hitRects.push({ kind: 'enemy', index: r.index, x: r.x, y: r.y, w: r.w, h: r.h });
+    b.anchors[r.index] = { x: Math.round(r.cx), y: Math.round(r.y) };
     if (b.phase === 'target' && b.target === r.index) {
       ctx.fillStyle = PAL.K;
       const ay = Math.max(10, Math.round(r.y) - 14);
@@ -495,6 +531,7 @@ function drawEnemies(ctx, b) {
       ctx.globalAlpha = 0.5; ctx.fillStyle = PAL.B; ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
     }
     b.hitRects.push({ kind: 'enemy', index: i, x, y, w, h });
+    b.anchors[i] = { x: Math.round(cx), y };
 
     // hp + morale under each enemy
     const bw = 84;
@@ -511,6 +548,18 @@ function drawEnemies(ctx, b) {
       ctx.fillRect(cx - 3, y - 10, 6, 4);
     }
   });
+}
+
+/** Floating damage numbers, hung off whichever renderer drew the bodies. */
+function drawPops(ctx, b) {
+  const tataAnchor = { x: 170, y: 362 };    // rises off her own HP row, not the enemy labels
+  for (const p of b.pops) {
+    const a = (p.slot >= 0 && b.anchors[p.slot]) || tataAnchor;
+    const rise = p.t * 30;
+    ctx.globalAlpha = Math.max(0, 1 - p.t * p.t);
+    text(ctx, p.txt, a.x, a.y - 16 - rise, { size: 15, align: 'center', bold: true, color: p.color });
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawStatus(ctx) {

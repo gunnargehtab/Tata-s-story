@@ -13,7 +13,7 @@ export const WEAPONS = {
     note: 'Close work. Snaps open on the way down.',
   },
   revolver: {
-    id: 'revolver', name: 'Snub Revolver', tag: 'smg', atk: 6, hit: -10, price: 110,
+    id: 'revolver', name: 'Snub Revolver', tag: 'smg', atk: 6, hit: -6, price: 110,
     note: 'Loud, heavy, and honest about what it is for.',
   },
   flare: {
@@ -21,7 +21,7 @@ export const WEAPONS = {
     note: 'Harbour issue. Every shot is a small unwelcome sunrise.',
   },
   driver: {
-    id: 'driver', name: 'Rivet Driver', tag: 'baton', atk: 9, hit: -8, price: 210,
+    id: 'driver', name: 'Rivet Driver', tag: 'baton', atk: 11, hit: -8, price: 210,
     note: 'Dock tool. Goes through a crate, a hull, or an argument.',
   },
 };

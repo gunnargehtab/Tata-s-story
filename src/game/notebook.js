@@ -1,4 +1,6 @@
 import { G, carried, takeItem, equipTool, equipWeapon, ownedWeapons, stat, heldWeapon } from './state.js';
+import { sfx, soundOn, setSoundOn } from '../engine/audio.js';
+import { gfxEnabled, setGfxEnabled } from '../gfx/index.js';
 import { ITEMS } from '../data/items.js';
 import { QUESTS } from '../data/quests.js';
 import { PAL } from '../art/palette.js';
@@ -27,12 +29,14 @@ const LINE = 17;
 
 export function openNotebook(tab = null) {
   Notebook.open = true;
+  sfx('notebook');
   if (tab !== null) Notebook.tab = TABS.indexOf(tab) >= 0 ? TABS.indexOf(tab) : Notebook.tab;
   Notebook.scroll = 0;
 }
 
 export function closeNotebook() {
   Notebook.open = false;
+  sfx('notebook');
 }
 
 function toast(msg) {
@@ -64,6 +68,8 @@ export function updateNotebook(dt) {
       equipWeapon(hit.id);
       toast(`In her hands: ${heldWeapon().name}.`);
     }
+    else if (hit.kind === 'sound') { setSoundOn(!soundOn()); sfx('tap'); }
+    else if (hit.kind === 'gfx') { setGfxEnabled(!gfxEnabled()); toast(gfxEnabled() ? '3D fields back on.' : 'Down to pen and paper.'); }
     else if (hit.kind === 'close') closeNotebook();
   }
 }
@@ -181,11 +187,19 @@ function drawCase(ctx, cur) {
   cur.y += 8;
 
   heading(ctx, cur, 'CLUES', `${G.clues.length}`);
-  if (!G.clues.length) return empty(ctx, cur, 'Nothing written down yet. Ask someone something.');
-  for (const clue of G.clues) {
+  if (!G.clues.length) empty(ctx, cur, 'Nothing written down yet. Ask someone something.');
+  else for (const clue of G.clues) {
     para(ctx, cur, `— ${clue.text}`);
     cur.y += 6;
   }
+  cur.y += 8;
+
+  heading(ctx, cur, 'THE MARGINS', 'settings');
+  const nb = Notebook;
+  para(ctx, cur, `[ sound: ${soundOn() ? 'on' : 'off'} ]`, { size: 12, color: PAL.b });
+  nb.rects.push({ kind: 'sound', x: PAGE_X, y: cur.y - LINE, w: 140, h: LINE });
+  para(ctx, cur, `[ renderer: ${gfxEnabled() ? '2.5D' : 'pixel'} ]`, { size: 12, color: PAL.b });
+  nb.rects.push({ kind: 'gfx', x: PAGE_X, y: cur.y - LINE, w: 160, h: LINE });
 }
 
 function drawJobs(ctx, cur) {

@@ -1,6 +1,7 @@
 import { PAL } from '../art/palette.js';
 import { inkPanel, text, wrap, VIEW } from '../engine/ui.js';
 import { Input } from '../engine/input.js';
+import { sfx } from '../engine/audio.js';
 
 /*
  * Notebook-style dialogue box: typewriter reveal, tap to advance,
@@ -81,7 +82,7 @@ export function updateDialogue(dt) {
     // or the next frame would recompute it back down
     Dialog.timer = full / CPS;
     Dialog.revealed = full;
-  } else if (!Dialog.choices) next();
+  } else if (!Dialog.choices) { sfx('dialog'); next(); }
 }
 
 function updateChoices(dt) {
@@ -98,6 +99,7 @@ function updateChoices(dt) {
   }
   if (Input.actionPressed) pick = Dialog.cursor;
   if (pick < 0) return;
+  sfx('confirm');
   const cb = Dialog.onChoice;
   Dialog.active = false;
   Dialog.choices = null;
